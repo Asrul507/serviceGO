@@ -403,7 +403,7 @@ app.post('/api/orders', async (c) => {
   }
 });
 
-// Endpoint Callback Notifikasi Otomatis Duitku (AUTO-PAID)
+// Endpoint Callback Duitku (AUTO-PAID)
 app.post('/api/duitku/callback', async (c) => {
   try {
     const body = await c.req.parseBody();
@@ -433,23 +433,26 @@ app.post('/api/duitku/callback', async (c) => {
   }
 });
 
-// Endpoint Verifikasi Pembayaran Tunai di Tempat (COD) oleh Teknisi/Admin
+// Endpoint Verifikasi Pembayaran Tunai Teknisi/Admin
 app.post('/api/orders/:id/verify-cash', async (c) => {
   try {
     const id = Number(c.req.param('id'));
-    const order = await c.env.DB.prepare('SELECT id, payment_status, payment_method FROM orders WHERE id = ?')
+    const order = await c.env.DB.prepare('SELECT id, payment_status, payment_method, status FROM orders WHERE id = ?')
       .bind(id)
-      .first<{ id: number; payment_status: string; payment_method: string }>();
+      .first<{ id: number; payment_status: string; payment_method: string; status: string }>();
 
     if (!order) {
       return c.json({ error: 'Pesanan tidak ditemukan' }, 404);
+    }
+
+    if (order.status === 'cancelled') {
+      return c.json({ error: 'Pesanan sudah dibatalkan' }, 400);
     }
 
     if (order.payment_status === 'paid') {
       return c.json({ error: 'Pesanan ini sudah berstatus lunas' }, 400);
     }
 
-    // Set status lunas permanen
     await c.env.DB.prepare(
       "UPDATE orders SET payment_status = 'paid', status = 'completed' WHERE id = ?"
     ).bind(id).run();
@@ -460,7 +463,7 @@ app.post('/api/orders/:id/verify-cash', async (c) => {
   }
 });
 
-// Endpoint Update Status Pengerjaan (Hanya boleh ubah status kerja, payment_status dikunci)
+// Endpoint Update Status Pengerjaan (Auto-Cancel Payment bila status 'cancelled')
 app.patch('/api/orders/:id/status', async (c) => {
   try {
     const id = Number(c.req.param('id'));
@@ -471,11 +474,24 @@ app.patch('/api/orders/:id/status', async (c) => {
       return c.json({ error: 'Status kerja wajib disertakan' }, 400);
     }
 
-    await c.env.DB.prepare(
-      `UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
-    )
-      .bind(String(status), id)
-      .run();
+    if (status === 'cancelled') {
+      // Jika status dibatalkan, otomatis ubah payment_status menjadi cancelled juga
+      await c.env.DB.prepare(
+        `UPDATE orders 
+         SET status = 'cancelled', 
+             payment_status = 'cancelled', 
+             updated_at = CURRENT_TIMESTAMP 
+         WHERE id = ?`
+      )
+        .bind(id)
+        .run();
+    } else {
+      await c.env.DB.prepare(
+        `UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+      )
+        .bind(String(status), id)
+        .run();
+    }
 
     return c.json({ success: true, message: 'Status kerja berhasil diperbarui' });
   } catch (err: any) {
