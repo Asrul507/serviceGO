@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>serviceGO - Kelola Layanan AC</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-blue-600 text-white p-2.5 rounded-lg shadow-sm">
+          <i class="fa-solid fa-snowflake text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 leading-none">serviceGO</h1>
+          <p class="text-xs text-slate-500 mt-1">Panel Kelola Layanan & Tarif AC</p>
+        </div>
+      </div>
+      <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition flex items-center gap-2 shadow-sm">
+        <i class="fa-solid fa-plus"></i> Tambah Layanan
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+      <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="font-semibold text-slate-800">Daftar Layanan Tersedia</h2>
+        <button onclick="fetchServices()" class="text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1">
+          <i class="fa-solid fa-rotate"></i> Refresh
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="bg-slate-50 text-slate-500 text-xs border-b border-slate-200 uppercase tracking-wider">
+              <th class="py-3.5 px-4 font-semibold">Nama Layanan</th>
+              <th class="py-3.5 px-4 font-semibold">Deskripsi</th>
+              <th class="py-3.5 px-4 font-semibold">Tarif Dasar</th>
+              <th class="py-3.5 px-4 font-semibold">Satuan</th>
+              <th class="py-3.5 px-4 font-semibold text-center">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="serviceTableBody" class="divide-y divide-slate-100 text-slate-700">
+            <tr>
+              <td colspan="5" class="py-8 text-center text-slate-400">Memuat data layanan...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div id="serviceModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
+    <div class="bg-white w-full max-w-md rounded-xl p-6 shadow-xl border border-slate-200">
+      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+        <h3 id="modalTitle" class="font-bold text-slate-800 text-base">Tambah Layanan Baru</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+
+      <form id="serviceForm" onsubmit="handleFormSubmit(event)" class="space-y-4 mt-4 text-sm">
+        <input type="hidden" id="serviceId" />
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Layanan *</label>
+          <input type="text" id="serviceName" required placeholder="Contoh: Cuci AC Split 1 PK" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Deskripsi</label>
+          <textarea id="serviceDesc" rows="2" placeholder="Keterangan singkat..." class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tarif Dasar (Rp) *</label>
+            <input type="number" id="servicePrice" required min="0" placeholder="75000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Satuan</label>
+            <input type="text" id="serviceUnit" value="unit" placeholder="unit" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Batal</button>
+          <button type="submit" class="px-4 py-2 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let servicesData = [];
+
+    async function fetchServices() {
+      try {
+        const res = await fetch('/api/services');
+        servicesData = await res.json();
+        renderTable();
+      } catch (err) {
+        document.getElementById('serviceTableBody').innerHTML = `
+          <tr><td colspan="5" class="py-6 text-center text-red-500">Gagal mengambil data dari server.</td></tr>
+        `;
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('serviceTableBody');
+      if (!servicesData || servicesData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Belum ada layanan yang ditambahkan.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = servicesData.map(item => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="py-3.5 px-4 font-semibold text-slate-900">${escapeHtml(item.name)}</td>
+          <td class="py-3.5 px-4 text-slate-500 max-w-xs truncate">${escapeHtml(item.description || '-')}</td>
+          <td class="py-3.5 px-4 font-medium text-slate-800">Rp ${Number(item.base_price).toLocaleString('id-ID')}</td>
+          <td class="py-3.5 px-4 text-slate-500"><span class="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded font-mono">/${item.unit}</span></td>
+          <td class="py-3.5 px-4 text-center">
+            <div class="flex justify-center items-center gap-2">
+              <button onclick="openEditModal(${item.id})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Edit">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="deleteService(${item.id})" class="p-1.5 text-red-500 hover:bg-red-50 rounded" title="Hapus">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openModal() {
+      document.getElementById('serviceId').value = '';
+      document.getElementById('modalTitle').textContent = 'Tambah Layanan Baru';
+      document.getElementById('serviceForm').reset();
+      document.getElementById('serviceUnit').value = 'unit';
+      document.getElementById('serviceModal').classList.remove('hidden');
+      document.getElementById('serviceModal').classList.add('flex');
+    }
+
+    function openEditModal(id) {
+      const item = servicesData.find(s => s.id === id);
+      if (!item) return;
+
+      document.getElementById('serviceId').value = item.id;
+      document.getElementById('modalTitle').textContent = 'Edit Layanan';
+      document.getElementById('serviceName').value = item.name;
+      document.getElementById('serviceDesc').value = item.description || '';
+      document.getElementById('servicePrice').value = item.base_price;
+      document.getElementById('serviceUnit').value = item.unit || 'unit';
+
+      document.getElementById('serviceModal').classList.remove('hidden');
+      document.getElementById('serviceModal').classList.add('flex');
+    }
+
+    function closeModal() {
+      document.getElementById('serviceModal').classList.add('hidden');
+      document.getElementById('serviceModal').classList.remove('flex');
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('serviceId').value;
+      const payload = {
+        name: document.getElementById('serviceName').value,
+        description: document.getElementById('serviceDesc').value,
+        base_price: parseFloat(document.getElementById('servicePrice').value),
+        unit: document.getElementById('serviceUnit').value
+      };
+
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/services/${id}` : '/api/services';
+
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          closeModal();
+          fetchServices();
+        } else {
+          alert('Gagal menyimpan data.');
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan jaringan.');
+      }
+    }
+
+    async function deleteService(id) {
+      if (!confirm('Apakah Anda yakin ingin menghapus layanan ini?')) return;
+      try {
+        const res = await fetch(`/api/services/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          fetchServices();
+        } else {
+          alert('Gagal menghapus layanan.');
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan jaringan.');
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    fetchServices();
+  </script>
+</body>
+</html>
