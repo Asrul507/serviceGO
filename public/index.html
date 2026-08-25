@@ -2,14 +2,13 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <!-- Script Redirect Otomatis Subdomain Pelanggan -->
   <script>
     if (window.location.hostname.includes('orders-go')) {
       window.location.replace('/booking.html');
     }
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>serviceGO - Manajemen Operasional Layanan Jasa</title>
+  <title>serviceGO - Manajemen Operasional Layanan</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
@@ -17,21 +16,20 @@
 
   <!-- Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-xs">
-    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="bg-blue-600 text-white p-2 rounded-lg shadow-sm">
           <i class="fa-solid fa-toolbox text-lg"></i>
         </div>
         <div>
           <h1 class="text-base font-bold text-slate-900 leading-tight">serviceGO</h1>
-          <p class="text-xs text-slate-500">Sistem Operasional & Manajemen Layanan</p>
+          <p class="text-xs text-slate-500">Panel Operasional & Keuangan</p>
         </div>
       </div>
 
-      <!-- Tombol Aksi Cepat -->
       <div class="flex items-center gap-2">
         <button onclick="openOrderModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
-          <i class="fa-solid fa-calendar-plus"></i> Buat Pesanan Baru
+          <i class="fa-solid fa-calendar-plus"></i> Pesanan Baru
         </button>
         <button onclick="openServiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
           <i class="fa-solid fa-plus"></i> Tambah Layanan
@@ -39,8 +37,8 @@
       </div>
     </div>
 
-    <!-- Tab Navigasi -->
-    <div class="max-w-6xl mx-auto px-4 flex gap-6 border-t border-slate-100 text-sm font-medium">
+    <!-- Nav Tab -->
+    <div class="max-w-7xl mx-auto px-4 flex gap-6 border-t border-slate-100 text-sm font-medium">
       <button id="tabOrdersBtn" onclick="switchTab('orders')" class="py-2.5 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition">
         <i class="fa-solid fa-list-check"></i> Daftar Pesanan
       </button>
@@ -50,38 +48,50 @@
     </div>
   </header>
 
-  <!-- Konten Utama -->
-  <main class="max-w-6xl mx-auto px-4 py-6">
+  <!-- Konten -->
+  <main class="max-w-7xl mx-auto px-4 py-6">
 
     <!-- ==================== TAB 1: DAFTAR PESANAN ==================== -->
     <section id="tabOrders" class="space-y-4">
-      <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div>
-            <h2 class="font-semibold text-slate-800 text-sm">Jadwal & Riwayat Booking</h2>
-            <p class="text-xs text-slate-500">Kelola status pengerjaan unit dan data alamat pelanggan</p>
-          </div>
-          <button onclick="fetchOrders()" class="text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1 bg-white px-2.5 py-1.5 border border-slate-200 rounded-lg">
-            <i class="fa-solid fa-rotate"></i> Refresh
-          </button>
+      
+      <!-- Filter Bar -->
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1">Filter Status:</span>
+          <button onclick="setFilter('all')" id="filter-all" class="filter-btn bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition">Semua</button>
+          <button onclick="setFilter('pending')" id="filter-pending" class="filter-btn bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs px-3 py-1.5 rounded-lg font-medium transition">Menunggu</button>
+          <button onclick="setFilter('in_progress')" id="filter-in_progress" class="filter-btn bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs px-3 py-1.5 rounded-lg font-medium transition">Dikerjakan</button>
+          <button onclick="setFilter('completed')" id="filter-completed" class="filter-btn bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs px-3 py-1.5 rounded-lg font-medium transition">Selesai</button>
+          <button onclick="setFilter('cancelled')" id="filter-cancelled" class="filter-btn bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs px-3 py-1.5 rounded-lg font-medium transition">Batal</button>
         </div>
 
+        <div class="flex items-center gap-2">
+          <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="Cari nama / nomor HP..." class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-48 sm:w-60" />
+          <button onclick="fetchOrders()" class="text-xs text-slate-500 hover:text-blue-600 flex items-center gap-1 bg-white px-2.5 py-1.5 border border-slate-200 rounded-lg">
+            <i class="fa-solid fa-rotate"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabel Pesanan -->
+      <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 font-semibold">
-                <th class="py-3 px-4">ID</th>
-                <th class="py-3 px-4">Pelanggan</th>
-                <th class="py-3 px-4">Layanan & Jml</th>
-                <th class="py-3 px-4">Total Biaya</th>
-                <th class="py-3 px-4">Jadwal Pengerjaan</th>
-                <th class="py-3 px-4">Status</th>
-                <th class="py-3 px-4 text-center">Ubah Status</th>
+                <th class="py-3.5 px-4">ID</th>
+                <th class="py-3.5 px-4">Pelanggan</th>
+                <th class="py-3.5 px-4">Layanan</th>
+                <th class="py-3.5 px-4">Total</th>
+                <th class="py-3.5 px-4">Metode Bayar</th>
+                <th class="py-3.5 px-4">Status Bayar</th>
+                <th class="py-3.5 px-4">Status Kerja</th>
+                <th class="py-3.5 px-4 text-center">Kelola Status</th>
               </tr>
             </thead>
             <tbody id="ordersTableBody" class="divide-y divide-slate-100 text-slate-700">
               <tr>
-                <td colspan="7" class="py-8 text-center text-slate-400">Memuat data pesanan...</td>
+                <td colspan="8" class="py-8 text-center text-slate-400">Memuat data pesanan...</td>
               </tr>
             </tbody>
           </table>
@@ -106,11 +116,11 @@
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 font-semibold">
-                <th class="py-3 px-4">Nama Layanan</th>
-                <th class="py-3 px-4">Deskripsi</th>
-                <th class="py-3 px-4">Tarif Dasar</th>
-                <th class="py-3 px-4">Satuan</th>
-                <th class="py-3 px-4 text-center">Aksi</th>
+                <th class="py-3.5 px-4">Nama Layanan</th>
+                <th class="py-3.5 px-4">Deskripsi</th>
+                <th class="py-3.5 px-4">Tarif Dasar</th>
+                <th class="py-3.5 px-4">Satuan</th>
+                <th class="py-3.5 px-4 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody id="serviceTableBody" class="divide-y divide-slate-100 text-slate-700">
@@ -125,7 +135,7 @@
 
   </main>
 
-  <!-- ==================== MODAL TAMBAH/EDIT LAYANAN ==================== -->
+  <!-- Modal Tambah/Edit Layanan -->
   <div id="serviceModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
     <div class="bg-white w-full max-w-md rounded-xl p-5 shadow-xl border border-slate-200">
       <div class="flex justify-between items-center pb-3 border-b border-slate-100">
@@ -135,17 +145,14 @@
 
       <form id="serviceForm" onsubmit="handleServiceSubmit(event)" class="space-y-3 mt-3 text-xs">
         <input type="hidden" id="serviceId" />
-        
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Nama Layanan *</label>
           <input type="text" id="serviceName" required placeholder="Contoh: Jasa Pembersihan / Perbaikan" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
         </div>
-
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Deskripsi</label>
           <textarea id="serviceDesc" rows="2" placeholder="Keterangan singkat..." class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
         </div>
-
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-slate-600 mb-1">Tarif Dasar (Rp) *</label>
@@ -156,7 +163,6 @@
             <input type="text" id="serviceUnit" value="unit" placeholder="unit / titik / sesi / paket" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
         </div>
-
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
           <button type="button" onclick="closeServiceModal()" class="px-3.5 py-1.5 font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Batal</button>
           <button type="submit" class="px-3.5 py-1.5 font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg">Simpan</button>
@@ -165,7 +171,7 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL PESANAN BARU (BOOKING) ==================== -->
+  <!-- Modal Booking Admin -->
   <div id="orderModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
     <div class="bg-white w-full max-w-lg rounded-xl p-5 shadow-xl border border-slate-200">
       <div class="flex justify-between items-center pb-3 border-b border-slate-100">
@@ -184,12 +190,10 @@
             <input type="tel" id="custPhone" required placeholder="081234567890" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
         </div>
-
         <div>
           <label class="block font-semibold text-slate-600 mb-1">Alamat Lengkap / Lokasi *</label>
-          <textarea id="custAddress" required rows="2" placeholder="Alamat lengkap tujuan pengerjaan..." class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+          <textarea id="custAddress" required rows="2" placeholder="Alamat pengerjaan..." class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
         </div>
-
         <div class="grid grid-cols-3 gap-3">
           <div class="col-span-2">
             <label class="block font-semibold text-slate-600 mb-1">Pilih Layanan *</label>
@@ -202,18 +206,24 @@
             <input type="number" id="orderQty" value="1" min="1" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
         </div>
-
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block font-semibold text-slate-600 mb-1">Tanggal Pengerjaan *</label>
             <input type="date" id="orderDate" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
           <div>
-            <label class="block font-semibold text-slate-600 mb-1">Catatan / Detail Keluhan</label>
-            <input type="text" id="orderNotes" placeholder="Contoh: Detail catatan permintaan" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            <label class="block font-semibold text-slate-600 mb-1">Metode Pembayaran *</label>
+            <select id="orderPaymentMethod" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+              <option value="cash">Tunai (Saat Teknisi Datang)</option>
+              <option value="transfer">Transfer Bank (Sekarang)</option>
+              <option value="qris">QRIS (Sekarang)</option>
+            </select>
           </div>
         </div>
-
+        <div>
+          <label class="block font-semibold text-slate-600 mb-1">Catatan Tambahan</label>
+          <input type="text" id="orderNotes" placeholder="Contoh: Detail kerusakan / permintaan" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+        </div>
         <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
           <button type="button" onclick="closeOrderModal()" class="px-3.5 py-1.5 font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Batal</button>
           <button type="submit" class="px-3.5 py-1.5 font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Simpan Pesanan</button>
@@ -222,10 +232,10 @@
     </div>
   </div>
 
-  <!-- Javascript Logic -->
   <script>
     let servicesData = [];
     let ordersData = [];
+    let currentFilter = 'all';
 
     function switchTab(tab) {
       const tabOrders = document.getElementById('tabOrders');
@@ -248,6 +258,7 @@
       }
     }
 
+    // ================= SERVICES =================
     async function fetchServices() {
       try {
         const res = await fetch('/api/services');
@@ -255,16 +266,14 @@
         renderServicesTable();
         populateServiceDropdown();
       } catch (err) {
-        document.getElementById('serviceTableBody').innerHTML = `
-          <tr><td colspan="5" class="py-6 text-center text-red-500">Gagal mengambil data layanan.</td></tr>
-        `;
+        document.getElementById('serviceTableBody').innerHTML = `<tr><td colspan="5" class="py-6 text-center text-red-500">Gagal mengambil data.</td></tr>`;
       }
     }
 
     function renderServicesTable() {
       const tbody = document.getElementById('serviceTableBody');
       if (!servicesData || servicesData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Belum ada layanan yang ditambahkan.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-400">Belum ada layanan aktif.</td></tr>`;
         return;
       }
 
@@ -276,12 +285,8 @@
           <td class="py-3 px-4 text-slate-500"><span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">/${item.unit}</span></td>
           <td class="py-3 px-4 text-center">
             <div class="flex justify-center items-center gap-2">
-              <button onclick="openEditServiceModal(${item.id})" class="p-1 text-blue-600 hover:bg-blue-50 rounded" title="Edit">
-                <i class="fa-solid fa-pen-to-square"></i>
-              </button>
-              <button onclick="deleteService(${item.id})" class="p-1 text-red-500 hover:bg-red-50 rounded" title="Hapus">
-                <i class="fa-solid fa-trash"></i>
-              </button>
+              <button onclick="openEditServiceModal(${item.id})" class="p-1 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button onclick="deleteService(${item.id})" class="p-1 text-red-500 hover:bg-red-50 rounded"><i class="fa-solid fa-trash"></i></button>
             </div>
           </td>
         </tr>
@@ -312,7 +317,6 @@
       document.getElementById('serviceDesc').value = item.description || '';
       document.getElementById('servicePrice').value = item.base_price;
       document.getElementById('serviceUnit').value = item.unit || 'unit';
-
       document.getElementById('serviceModal').classList.replace('hidden', 'flex');
     }
 
@@ -353,16 +357,62 @@
       if (res.ok) fetchServices();
     }
 
+    // ================= ORDERS & FILTER =================
     async function fetchOrders() {
       try {
         const res = await fetch('/api/orders');
         ordersData = await res.json();
-        renderOrdersTable();
+        renderFilteredOrders();
       } catch (err) {
-        document.getElementById('ordersTableBody').innerHTML = `
-          <tr><td colspan="7" class="py-6 text-center text-red-500">Gagal mengambil data pesanan.</td></tr>
-        `;
+        document.getElementById('ordersTableBody').innerHTML = `<tr><td colspan="8" class="py-6 text-center text-red-500">Gagal mengambil data pesanan.</td></tr>`;
       }
+    }
+
+    function setFilter(status) {
+      currentFilter = status;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.className = 'filter-btn bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs px-3 py-1.5 rounded-lg font-medium transition';
+      });
+      document.getElementById(`filter-${status}`).className = 'filter-btn bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition';
+      renderFilteredOrders();
+    }
+
+    function handleSearch() {
+      renderFilteredOrders();
+    }
+
+    function renderFilteredOrders() {
+      const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+      let filtered = ordersData;
+
+      if (currentFilter !== 'all') {
+        filtered = filtered.filter(o => o.status === currentFilter);
+      }
+
+      if (keyword) {
+        filtered = filtered.filter(o => 
+          o.customer_name.toLowerCase().includes(keyword) || 
+          o.customer_phone.toLowerCase().includes(keyword) ||
+          o.service_name.toLowerCase().includes(keyword)
+        );
+      }
+
+      renderOrdersTable(filtered);
+    }
+
+    function getMethodBadge(method) {
+      switch(method) {
+        case 'transfer': return '<span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-mono text-[10px]"><i class="fa-solid fa-building-columns mr-1"></i>Transfer</span>';
+        case 'qris': return '<span class="bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-mono text-[10px]"><i class="fa-solid fa-qrcode mr-1"></i>QRIS</span>';
+        default: return '<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-mono text-[10px]"><i class="fa-solid fa-hand-holding-dollar mr-1"></i>Saat Tiba (Cash)</span>';
+      }
+    }
+
+    function getPaymentStatusBadge(status) {
+      if (status === 'paid') {
+        return '<span class="bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full text-[10px] inline-flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Lunas</span>';
+      }
+      return '<span class="bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-full text-[10px] inline-flex items-center gap-1"><i class="fa-solid fa-clock"></i> Belum Bayar</span>';
     }
 
     function getStatusBadge(status) {
@@ -375,58 +425,69 @@
       }
     }
 
-    function renderOrdersTable() {
+    function renderOrdersTable(data) {
       const tbody = document.getElementById('ordersTableBody');
-      if (!ordersData || ordersData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Belum ada data pesanan masuk.</td></tr>`;
+      if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">Tidak ada data pesanan sesuai kriteria.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = ordersData.map(order => `
+      tbody.innerHTML = data.map(order => `
         <tr class="hover:bg-slate-50 transition">
           <td class="py-3 px-4 font-mono font-medium text-slate-500">#${order.id}</td>
           <td class="py-3 px-4">
             <div class="font-semibold text-slate-900">${escapeHtml(order.customer_name)}</div>
-            <div class="text-[11px] text-slate-500">${escapeHtml(order.customer_phone)}</div>
+            <a href="https://wa.me/${formatPhone(order.customer_phone)}" target="_blank" class="text-[11px] text-emerald-600 hover:underline flex items-center gap-1">
+              <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(order.customer_phone)}
+            </a>
             <div class="text-[11px] text-slate-400 truncate max-w-xs">${escapeHtml(order.customer_address)}</div>
           </td>
           <td class="py-3 px-4">
             <div class="font-medium text-slate-800">${escapeHtml(order.service_name)}</div>
-            <div class="text-slate-500 text-[11px]">${order.qty} ${escapeHtml(order.service_unit)}</div>
+            <div class="text-slate-500 text-[11px]">${order.qty} ${escapeHtml(order.service_unit)} | <span class="text-slate-600">${order.scheduled_date}</span></div>
           </td>
-          <td class="py-3 px-4 font-semibold text-emerald-600">
+          <td class="py-3 px-4 font-semibold text-slate-900">
             Rp ${Number(order.total_price).toLocaleString('id-ID')}
           </td>
           <td class="py-3 px-4">
-            <div class="font-medium text-slate-700">${order.scheduled_date}</div>
-            ${order.notes ? `<div class="text-[11px] text-slate-400 italic">${escapeHtml(order.notes)}</div>` : ''}
+            ${getMethodBadge(order.payment_method)}
+          </td>
+          <td class="py-3 px-4">
+            ${getPaymentStatusBadge(order.payment_status)}
           </td>
           <td class="py-3 px-4">
             ${getStatusBadge(order.status)}
           </td>
-          <td class="py-3 px-4 text-center">
-            <select onchange="updateOrderStatus(${order.id}, this.value)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs rounded px-2 py-1 focus:outline-none">
-              <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Menunggu</option>
-              <option value="in_progress" ${order.status === 'in_progress' ? 'selected' : ''}>Dikerjakan</option>
-              <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>Selesai</option>
-              <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Batal</option>
+          <td class="py-3 px-4 text-center space-y-1">
+            <!-- Ubah Status Pengerjaan -->
+            <select onchange="updateOrderField(${order.id}, 'status', this.value)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[11px] rounded px-1.5 py-1 focus:outline-none">
+              <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>⏳ Menunggu</option>
+              <option value="in_progress" ${order.status === 'in_progress' ? 'selected' : ''}>⚙️ Dikerjakan</option>
+              <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>✅ Selesai</option>
+              <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>❌ Batal</option>
+            </select>
+            <!-- Ubah Status Bayar -->
+            <select onchange="updateOrderField(${order.id}, 'payment_status', this.value)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[11px] rounded px-1.5 py-1 focus:outline-none font-medium">
+              <option value="unpaid" ${order.payment_status === 'unpaid' ? 'selected' : ''}>🔴 Belum Lunas</option>
+              <option value="paid" ${order.payment_status === 'paid' ? 'selected' : ''}>🟢 Sudah Lunas</option>
             </select>
           </td>
         </tr>
       `).join('');
     }
 
-    async function updateOrderStatus(orderId, newStatus) {
+    async function updateOrderField(orderId, field, value) {
       try {
+        const payload = { [field]: value };
         const res = await fetch(`/api/orders/${orderId}/status`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
+          body: JSON.stringify(payload)
         });
         if (res.ok) {
           fetchOrders();
         } else {
-          alert('Gagal memperbarui status pesanan.');
+          alert('Gagal memperbarui status.');
         }
       } catch (err) {
         alert('Terjadi kesalahan jaringan.');
@@ -452,6 +513,7 @@
         service_id: Number(document.getElementById('orderServiceSelect').value),
         qty: Number(document.getElementById('orderQty').value),
         scheduled_date: document.getElementById('orderDate').value,
+        payment_method: document.getElementById('orderPaymentMethod').value,
         notes: document.getElementById('orderNotes').value
       };
 
@@ -471,6 +533,12 @@
       } catch (err) {
         alert('Terjadi kesalahan jaringan.');
       }
+    }
+
+    function formatPhone(phone) {
+      let p = phone.replace(/[^0-9]/g, '');
+      if (p.startsWith('0')) p = '62' + p.slice(1);
+      return p;
     }
 
     function escapeHtml(text) {
