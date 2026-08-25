@@ -14,7 +14,6 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
 
-  <!-- Header -->
   <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-xs">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
       <div class="flex items-center gap-3">
@@ -28,16 +27,12 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <button onclick="openOrderModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
-          <i class="fa-solid fa-calendar-plus"></i> Pesanan Baru
-        </button>
         <button onclick="openServiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-3.5 py-2 rounded-lg transition flex items-center gap-1.5 shadow-sm">
           <i class="fa-solid fa-plus"></i> Tambah Layanan
         </button>
       </div>
     </div>
 
-    <!-- Nav Tab -->
     <div class="max-w-7xl mx-auto px-4 flex gap-6 border-t border-slate-100 text-sm font-medium">
       <button id="tabOrdersBtn" onclick="switchTab('orders')" class="py-2.5 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition">
         <i class="fa-solid fa-list-check"></i> Daftar Pesanan
@@ -48,13 +43,10 @@
     </div>
   </header>
 
-  <!-- Konten -->
   <main class="max-w-7xl mx-auto px-4 py-6">
 
-    <!-- ==================== TAB 1: DAFTAR PESANAN ==================== -->
+    <!-- TAB 1: DAFTAR PESANAN -->
     <section id="tabOrders" class="space-y-4">
-      
-      <!-- Filter Bar -->
       <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2">
           <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider mr-1">Filter Status:</span>
@@ -73,16 +65,15 @@
         </div>
       </div>
 
-      <!-- Tabel Pesanan -->
       <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-slate-50 text-slate-500 uppercase tracking-wider border-b border-slate-200 font-semibold">
                 <th class="py-3.5 px-4">ID</th>
-                <th class="py-3.5 px-4">Pelanggan</th>
-                <th class="py-3.5 px-4">Layanan</th>
-                <th class="py-3.5 px-4">Total</th>
+                <th class="py-3.5 px-4">Pelanggan & Lokasi</th>
+                <th class="py-3.5 px-4">Rincian Layanan</th>
+                <th class="py-3.5 px-4">Total Biaya</th>
                 <th class="py-3.5 px-4">Metode Bayar</th>
                 <th class="py-3.5 px-4">Status Bayar</th>
                 <th class="py-3.5 px-4">Status Kerja</th>
@@ -99,7 +90,7 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 2: DAFTAR LAYANAN ==================== -->
+    <!-- TAB 2: DAFTAR LAYANAN -->
     <section id="tabServices" class="hidden space-y-4">
       <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -171,67 +162,6 @@
     </div>
   </div>
 
-  <!-- Modal Booking Admin -->
-  <div id="orderModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
-    <div class="bg-white w-full max-w-lg rounded-xl p-5 shadow-xl border border-slate-200">
-      <div class="flex justify-between items-center pb-3 border-b border-slate-100">
-        <h3 class="font-bold text-slate-800 text-sm">Formulir Pesanan Baru</h3>
-        <button onclick="closeOrderModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
-      </div>
-
-      <form id="orderForm" onsubmit="handleOrderSubmit(event)" class="space-y-3 mt-3 text-xs">
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Nama Pelanggan *</label>
-            <input type="text" id="custName" required placeholder="Nama Lengkap" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">No. WhatsApp / HP *</label>
-            <input type="tel" id="custPhone" required placeholder="081234567890" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-          </div>
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Alamat Lengkap / Lokasi *</label>
-          <textarea id="custAddress" required rows="2" placeholder="Alamat pengerjaan..." class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
-        </div>
-        <div class="grid grid-cols-3 gap-3">
-          <div class="col-span-2">
-            <label class="block font-semibold text-slate-600 mb-1">Pilih Layanan *</label>
-            <select id="orderServiceSelect" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-              <option value="">-- Pilih Jenis Layanan --</option>
-            </select>
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Jumlah (Qty) *</label>
-            <input type="number" id="orderQty" value="1" min="1" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Tanggal Pengerjaan *</label>
-            <input type="date" id="orderDate" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-600 mb-1">Metode Pembayaran *</label>
-            <select id="orderPaymentMethod" required class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
-              <option value="cash">Tunai (Saat Teknisi Datang)</option>
-              <option value="transfer">Transfer Bank (Sekarang)</option>
-              <option value="qris">QRIS (Sekarang)</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-600 mb-1">Catatan Tambahan</label>
-          <input type="text" id="orderNotes" placeholder="Contoh: Detail kerusakan / permintaan" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-        </div>
-        <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeOrderModal()" class="px-3.5 py-1.5 font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Batal</button>
-          <button type="submit" class="px-3.5 py-1.5 font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg">Simpan Pesanan</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <script>
     let servicesData = [];
     let ordersData = [];
@@ -264,7 +194,6 @@
         const res = await fetch('/api/services');
         servicesData = await res.json();
         renderServicesTable();
-        populateServiceDropdown();
       } catch (err) {
         document.getElementById('serviceTableBody').innerHTML = `<tr><td colspan="5" class="py-6 text-center text-red-500">Gagal mengambil data.</td></tr>`;
       }
@@ -291,12 +220,6 @@
           </td>
         </tr>
       `).join('');
-    }
-
-    function populateServiceDropdown() {
-      const select = document.getElementById('orderServiceSelect');
-      select.innerHTML = '<option value="">-- Pilih Jenis Layanan --</option>' + 
-        servicesData.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (Rp ${Number(s.base_price).toLocaleString('id-ID')}/${s.unit})</option>`).join('');
     }
 
     function openServiceModal() {
@@ -392,8 +315,7 @@
       if (keyword) {
         filtered = filtered.filter(o => 
           o.customer_name.toLowerCase().includes(keyword) || 
-          o.customer_phone.toLowerCase().includes(keyword) ||
-          o.service_name.toLowerCase().includes(keyword)
+          o.customer_phone.toLowerCase().includes(keyword)
         );
       }
 
@@ -404,7 +326,7 @@
       switch(method) {
         case 'transfer': return '<span class="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-mono text-[10px]"><i class="fa-solid fa-building-columns mr-1"></i>Transfer</span>';
         case 'qris': return '<span class="bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-mono text-[10px]"><i class="fa-solid fa-qrcode mr-1"></i>QRIS</span>';
-        default: return '<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-mono text-[10px]"><i class="fa-solid fa-hand-holding-dollar mr-1"></i>Saat Tiba (Cash)</span>';
+        default: return '<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-mono text-[10px]"><i class="fa-solid fa-hand-holding-dollar mr-1"></i>Saat Tiba</span>';
       }
     }
 
@@ -428,52 +350,57 @@
     function renderOrdersTable(data) {
       const tbody = document.getElementById('ordersTableBody');
       if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">Tidak ada data pesanan sesuai kriteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">Tidak ada data pesanan.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = data.map(order => `
-        <tr class="hover:bg-slate-50 transition">
-          <td class="py-3 px-4 font-mono font-medium text-slate-500">#${order.id}</td>
-          <td class="py-3 px-4">
-            <div class="font-semibold text-slate-900">${escapeHtml(order.customer_name)}</div>
-            <a href="https://wa.me/${formatPhone(order.customer_phone)}" target="_blank" class="text-[11px] text-emerald-600 hover:underline flex items-center gap-1">
-              <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(order.customer_phone)}
-            </a>
-            <div class="text-[11px] text-slate-400 truncate max-w-xs">${escapeHtml(order.customer_address)}</div>
-          </td>
-          <td class="py-3 px-4">
-            <div class="font-medium text-slate-800">${escapeHtml(order.service_name)}</div>
-            <div class="text-slate-500 text-[11px]">${order.qty} ${escapeHtml(order.service_unit)} | <span class="text-slate-600">${order.scheduled_date}</span></div>
-          </td>
-          <td class="py-3 px-4 font-semibold text-slate-900">
-            Rp ${Number(order.total_price).toLocaleString('id-ID')}
-          </td>
-          <td class="py-3 px-4">
-            ${getMethodBadge(order.payment_method)}
-          </td>
-          <td class="py-3 px-4">
-            ${getPaymentStatusBadge(order.payment_status)}
-          </td>
-          <td class="py-3 px-4">
-            ${getStatusBadge(order.status)}
-          </td>
-          <td class="py-3 px-4 text-center space-y-1">
-            <!-- Ubah Status Pengerjaan -->
-            <select onchange="updateOrderField(${order.id}, 'status', this.value)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[11px] rounded px-1.5 py-1 focus:outline-none">
-              <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>⏳ Menunggu</option>
-              <option value="in_progress" ${order.status === 'in_progress' ? 'selected' : ''}>⚙️ Dikerjakan</option>
-              <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>✅ Selesai</option>
-              <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>❌ Batal</option>
-            </select>
-            <!-- Ubah Status Bayar -->
-            <select onchange="updateOrderField(${order.id}, 'payment_status', this.value)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[11px] rounded px-1.5 py-1 focus:outline-none font-medium">
-              <option value="unpaid" ${order.payment_status === 'unpaid' ? 'selected' : ''}>🔴 Belum Lunas</option>
-              <option value="paid" ${order.payment_status === 'paid' ? 'selected' : ''}>🟢 Sudah Lunas</option>
-            </select>
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = data.map(order => {
+        // Render item list
+        const itemsHtml = (order.items && order.items.length > 0) 
+          ? order.items.map(it => `<div>• <span class="font-medium">${escapeHtml(it.service_name)}</span> (${it.qty}x)</div>`).join('')
+          : '<span class="text-slate-400">-</span>';
+
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-4 font-mono font-medium text-slate-500">#${order.id}</td>
+            <td class="py-3 px-4">
+              <div class="font-semibold text-slate-900">${escapeHtml(order.customer_name)}</div>
+              <a href="https://wa.me/${formatPhone(order.customer_phone)}" target="_blank" class="text-[11px] text-emerald-600 hover:underline flex items-center gap-1">
+                <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(order.customer_phone)}
+              </a>
+              <div class="text-[11px] text-slate-400 truncate max-w-xs">${escapeHtml(order.customer_address)}</div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="text-[11px] text-slate-700 space-y-0.5">${itemsHtml}</div>
+              <div class="text-[10px] text-slate-400 mt-1"><i class="fa-regular fa-calendar mr-1"></i>${order.scheduled_date}</div>
+            </td>
+            <td class="py-3 px-4 font-bold text-slate-900">
+              Rp ${Number(order.total_price).toLocaleString('id-ID')}
+            </td>
+            <td class="py-3 px-4">
+              ${getMethodBadge(order.payment_method)}
+            </td>
+            <td class="py-3 px-4">
+              ${getPaymentStatusBadge(order.payment_status)}
+            </td>
+            <td class="py-3 px-4">
+              ${getStatusBadge(order.status)}
+            </td>
+            <td class="py-3 px-4 text-center space-y-1">
+              <select onchange="updateOrderField(${order.id}, 'status', this.value)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[11px] rounded px-1.5 py-1 focus:outline-none">
+                <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>⏳ Menunggu</option>
+                <option value="in_progress" ${order.status === 'in_progress' ? 'selected' : ''}>⚙️ Dikerjakan</option>
+                <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>✅ Selesai</option>
+                <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>❌ Batal</option>
+              </select>
+              <select onchange="updateOrderField(${order.id}, 'payment_status', this.value)" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-[11px] rounded px-1.5 py-1 focus:outline-none font-medium">
+                <option value="unpaid" ${order.payment_status === 'unpaid' ? 'selected' : ''}>🔴 Belum Lunas</option>
+                <option value="paid" ${order.payment_status === 'paid' ? 'selected' : ''}>🟢 Sudah Lunas</option>
+              </select>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     async function updateOrderField(orderId, field, value) {
@@ -488,47 +415,6 @@
           fetchOrders();
         } else {
           alert('Gagal memperbarui status.');
-        }
-      } catch (err) {
-        alert('Terjadi kesalahan jaringan.');
-      }
-    }
-
-    function openOrderModal() {
-      document.getElementById('orderForm').reset();
-      document.getElementById('orderDate').valueAsDate = new Date();
-      document.getElementById('orderModal').classList.replace('hidden', 'flex');
-    }
-
-    function closeOrderModal() {
-      document.getElementById('orderModal').classList.replace('flex', 'hidden');
-    }
-
-    async function handleOrderSubmit(e) {
-      e.preventDefault();
-      const payload = {
-        customer_name: document.getElementById('custName').value,
-        customer_phone: document.getElementById('custPhone').value,
-        customer_address: document.getElementById('custAddress').value,
-        service_id: Number(document.getElementById('orderServiceSelect').value),
-        qty: Number(document.getElementById('orderQty').value),
-        scheduled_date: document.getElementById('orderDate').value,
-        payment_method: document.getElementById('orderPaymentMethod').value,
-        notes: document.getElementById('orderNotes').value
-      };
-
-      try {
-        const res = await fetch('/api/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          closeOrderModal();
-          switchTab('orders');
-        } else {
-          alert('Gagal membuat pesanan.');
         }
       } catch (err) {
         alert('Terjadi kesalahan jaringan.');
