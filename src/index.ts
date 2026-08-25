@@ -254,7 +254,38 @@ app.delete('/api/services/:id', async (c) => {
 });
 
 // ==========================================
-// ENDPOINT ORDERS & DUITKU INTEGRATION
+// ENDPOINT DUITKU: GET PAYMENT METHODS
+// ==========================================
+app.post('/api/duitku/methods', async (c) => {
+  try {
+    const body = await c.req.json();
+    const amount = Number(body.amount) || 10000;
+    const merchantCode = c.env.DUITKU_MERCHANT_CODE || 'DS34561';
+    const apiKey = c.env.DUITKU_API_KEY || '4c8a97765b05ce46465b5598f8bdfbe6';
+    
+    const datetime = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
+    const signature = md5(`${merchantCode}${amount}${datetime}${apiKey}`);
+
+    const res = await fetch('https://sandbox.duitku.com/webapi/api/merchant/paymentmethod/getpaymentmethod', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        merchantcode: merchantCode,
+        amount: amount,
+        datetime: datetime,
+        signature: signature
+      })
+    });
+
+    const data: any = await res.json();
+    return c.json(data.paymentFee || []);
+  } catch (err: any) {
+    return c.json([], 200);
+  }
+});
+
+// ==========================================
+// ENDPOINT ORDERS & CREATE INVOICE
 // ==========================================
 
 app.get('/api/orders', async (c) => {
@@ -299,13 +330,13 @@ app.get('/api/orders', async (c) => {
 app.post('/api/orders', async (c) => {
   try {
     const body = await c.req.json();
-    const { customer_name, customer_phone, customer_address, items, scheduled_date, payment_method, notes } = body;
+    const { customer_name, customer_phone, customer_address, items, scheduled_date, payment_method, payment_channel, notes } = body;
 
     if (!customer_name || !customer_phone || !customer_address || !items || !Array.isArray(items) || items.length === 0 || !scheduled_date) {
       return c.json({ error: 'Formulir belum lengkap atau keranjang kosong' }, 400);
     }
 
-    // 1. Simpan Data Pelanggan
+    // 1. Simpan Pelanggan
     const custResult = await c.env.DB.prepare(
       'INSERT INTO customers (name, phone, address) VALUES (?, ?, ?)'
     )
@@ -314,7 +345,7 @@ app.post('/api/orders', async (c) => {
 
     const customerId = Number(custResult.meta.last_row_id);
 
-    // 2. Hitung Grand Total
+    // 2. Hitung Total
     let grandTotal = 0;
     const validatedItems = items.map((item: any) => {
       const price = Number(item.price) || 0;
@@ -331,6 +362,7 @@ app.post('/api/orders', async (c) => {
     });
 
     const method = String(payment_method || 'cash');
+    const selectedChannel = String(payment_channel || 'VC'); // Default channel bila kosong
     const firstServiceId = validatedItems[0].id;
 
     // 3. Simpan Pesanan Induk
@@ -344,7 +376,7 @@ app.post('/api/orders', async (c) => {
         validatedItems.length,
         grandTotal,
         String(scheduled_date),
-        method,
+        method === 'duitku' ? `duitku_${selectedChannel.toLowerCase()}` : method,
         String(notes || '')
       )
       .run();
@@ -363,7 +395,7 @@ app.post('/api/orders', async (c) => {
 
     let paymentUrl = null;
 
-    // 5. Request Invoice ke Duitku Sandbox (POP / Full Payment Option)
+    // 5. Request ke Duitku
     if (method === 'duitku') {
       const merchantCode = c.env.DUITKU_MERCHANT_CODE || 'DS34561';
       const apiKey = c.env.DUITKU_API_KEY || '4c8a97765b05ce46465b5598f8bdfbe6';
@@ -375,7 +407,7 @@ app.post('/api/orders', async (c) => {
       const duitkuPayload = {
         merchantCode: merchantCode,
         paymentAmount: paymentAmount,
-        paymentMethod: 'VC', // Default channel atau opsi kasir Duitku
+        paymentMethod: selectedChannel, // Channel dipilih pelanggan (BCA VA, Mandiri VA, QRIS, dll)
         merchantOrderId: merchantOrderId,
         productDetails: `Pemesanan Layanan #${orderId}`,
         email: 'customer@servicego.id',
@@ -399,7 +431,7 @@ app.post('/api/orders', async (c) => {
           paymentUrl = duitkuData.paymentUrl;
         } else {
           return c.json({ 
-            error: `Duitku Sandbox Response: ${duitkuData.statusMessage || duitkuData.Message || JSON.stringify(duitkuData)}` 
+            error: `Duitku Response: ${duitkuData.statusMessage || duitkuData.Message || JSON.stringify(duitkuData)}` 
           }, 400);
         }
       } catch (e: any) {
