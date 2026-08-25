@@ -1,0 +1,12 @@
+name = "servicego"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "servicego_db"
+database_id = "0d16a4a9-ddbc-4a8e-b7d3-dcf583b27a47"
