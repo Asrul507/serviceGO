@@ -174,10 +174,7 @@ app.use('*', async (c, next) => {
   await next();
 });
 
-// ==========================================
-// ENDPOINT SERVICES (CRUD)
-// ==========================================
-
+// Services Endpoint
 app.get('/api/services', async (c) => {
   try {
     const { results } = await c.env.DB.prepare(
@@ -193,17 +190,14 @@ app.post('/api/services', async (c) => {
   try {
     const body = await c.req.json();
     const { name, description, base_price, unit } = body;
-
     if (!name || base_price === undefined) {
       return c.json({ error: 'Nama dan tarif wajib diisi' }, 400);
     }
-
     const result = await c.env.DB.prepare(
       'INSERT INTO services (name, description, base_price, unit) VALUES (?, ?, ?, ?)'
     )
       .bind(String(name), String(description || ''), Number(base_price), String(unit || 'unit'))
       .run();
-
     return c.json({ success: true, id: result.meta.last_row_id }, 201);
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
@@ -215,7 +209,6 @@ app.put('/api/services/:id', async (c) => {
     const id = Number(c.req.param('id'));
     const body = await c.req.json();
     const { name, description, base_price, unit } = body;
-
     await c.env.DB.prepare(
       `UPDATE services 
        SET name = COALESCE(?, name), 
@@ -233,7 +226,6 @@ app.put('/api/services/:id', async (c) => {
         id
       )
       .run();
-
     return c.json({ success: true, message: 'Layanan berhasil diupdate' });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
@@ -246,48 +238,13 @@ app.delete('/api/services/:id', async (c) => {
     await c.env.DB.prepare('UPDATE services SET is_active = 0 WHERE id = ?')
       .bind(id)
       .run();
-
     return c.json({ success: true, message: 'Layanan berhasil dihapus' });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
   }
 });
 
-// ==========================================
-// ENDPOINT DUITKU: GET PAYMENT METHODS
-// ==========================================
-app.post('/api/duitku/methods', async (c) => {
-  try {
-    const body = await c.req.json();
-    const amount = Number(body.amount) || 10000;
-    const merchantCode = c.env.DUITKU_MERCHANT_CODE || 'DS34561';
-    const apiKey = c.env.DUITKU_API_KEY || '4c8a97765b05ce46465b5598f8bdfbe6';
-    
-    const datetime = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
-    const signature = md5(`${merchantCode}${amount}${datetime}${apiKey}`);
-
-    const res = await fetch('https://sandbox.duitku.com/webapi/api/merchant/paymentmethod/getpaymentmethod', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        merchantcode: merchantCode,
-        amount: amount,
-        datetime: datetime,
-        signature: signature
-      })
-    });
-
-    const data: any = await res.json();
-    return c.json(data.paymentFee || []);
-  } catch (err: any) {
-    return c.json([], 200);
-  }
-});
-
-// ==========================================
-// ENDPOINT ORDERS & CREATE INVOICE
-// ==========================================
-
+// Orders Endpoint
 app.get('/api/orders', async (c) => {
   try {
     const query = `
@@ -320,7 +277,6 @@ app.get('/api/orders', async (c) => {
         ord.items = [];
       }
     }
-
     return c.json(orderList);
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
@@ -336,7 +292,6 @@ app.post('/api/orders', async (c) => {
       return c.json({ error: 'Formulir belum lengkap atau keranjang kosong' }, 400);
     }
 
-    // 1. Simpan Pelanggan
     const custResult = await c.env.DB.prepare(
       'INSERT INTO customers (name, phone, address) VALUES (?, ?, ?)'
     )
@@ -345,7 +300,6 @@ app.post('/api/orders', async (c) => {
 
     const customerId = Number(custResult.meta.last_row_id);
 
-    // 2. Hitung Total
     let grandTotal = 0;
     const validatedItems = items.map((item: any) => {
       const price = Number(item.price) || 0;
@@ -362,10 +316,9 @@ app.post('/api/orders', async (c) => {
     });
 
     const method = String(payment_method || 'cash');
-    const selectedChannel = String(payment_channel || 'VC'); // Default channel bila kosong
+    const selectedChannel = String(payment_channel || 'SP');
     const firstServiceId = validatedItems[0].id;
 
-    // 3. Simpan Pesanan Induk
     const orderResult = await c.env.DB.prepare(
       `INSERT INTO orders (customer_id, service_id, qty, total_price, scheduled_date, status, payment_method, payment_status, notes)
        VALUES (?, ?, ?, ?, ?, 'pending', ?, 'unpaid', ?)`
@@ -383,7 +336,6 @@ app.post('/api/orders', async (c) => {
 
     const orderId = Number(orderResult.meta.last_row_id);
 
-    // 4. Simpan Rincian Item
     for (const itm of validatedItems) {
       await c.env.DB.prepare(
         `INSERT INTO order_items (order_id, service_id, service_name, qty, unit_price, subtotal)
@@ -393,9 +345,9 @@ app.post('/api/orders', async (c) => {
         .run();
     }
 
+    let reference = null;
     let paymentUrl = null;
 
-    // 5. Request ke Duitku
     if (method === 'duitku') {
       const merchantCode = c.env.DUITKU_MERCHANT_CODE || 'DS34561';
       const apiKey = c.env.DUITKU_API_KEY || '4c8a97765b05ce46465b5598f8bdfbe6';
@@ -407,7 +359,7 @@ app.post('/api/orders', async (c) => {
       const duitkuPayload = {
         merchantCode: merchantCode,
         paymentAmount: paymentAmount,
-        paymentMethod: selectedChannel, // Channel dipilih pelanggan (BCA VA, Mandiri VA, QRIS, dll)
+        paymentMethod: selectedChannel,
         merchantOrderId: merchantOrderId,
         productDetails: `Pemesanan Layanan #${orderId}`,
         email: 'customer@servicego.id',
@@ -427,7 +379,8 @@ app.post('/api/orders', async (c) => {
         });
 
         const duitkuData: any = await duitkuRes.json();
-        if (duitkuData && duitkuData.paymentUrl) {
+        if (duitkuData && (duitkuData.reference || duitkuData.paymentUrl)) {
+          reference = duitkuData.reference;
           paymentUrl = duitkuData.paymentUrl;
         } else {
           return c.json({ 
@@ -444,6 +397,7 @@ app.post('/api/orders', async (c) => {
       order_id: orderId, 
       total_price: grandTotal, 
       payment_method: method,
+      reference: reference,
       payment_url: paymentUrl
     }, 201);
 
@@ -452,7 +406,7 @@ app.post('/api/orders', async (c) => {
   }
 });
 
-// Endpoint Callback Notifikasi Otomatis
+// Endpoint Callback Notifikasi Otomatis Duitku (AUTO-PAID)
 app.post('/api/duitku/callback', async (c) => {
   try {
     const body = await c.req.parseBody();
@@ -482,23 +436,66 @@ app.post('/api/duitku/callback', async (c) => {
   }
 });
 
-// Update Status Manual Admin
+// Endpoint Verifikasi Pembayaran Tunai
+app.post('/api/orders/:id/verify-cash', async (c) => {
+  try {
+    const id = Number(c.req.param('id'));
+    const order = await c.env.DB.prepare('SELECT id, payment_status, payment_method, status FROM orders WHERE id = ?')
+      .bind(id)
+      .first<{ id: number; payment_status: string; payment_method: string; status: string }>();
+
+    if (!order) {
+      return c.json({ error: 'Pesanan tidak ditemukan' }, 404);
+    }
+
+    if (order.status === 'cancelled') {
+      return c.json({ error: 'Pesanan sudah dibatalkan' }, 400);
+    }
+
+    if (order.payment_status === 'paid') {
+      return c.json({ error: 'Pesanan ini sudah berstatus lunas' }, 400);
+    }
+
+    await c.env.DB.prepare(
+      "UPDATE orders SET payment_status = 'paid', status = 'completed' WHERE id = ?"
+    ).bind(id).run();
+
+    return c.json({ success: true, message: 'Pembayaran tunai berhasil diverifikasi lunas' });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// Update Status Kerja
 app.patch('/api/orders/:id/status', async (c) => {
   try {
     const id = Number(c.req.param('id'));
     const body = await c.req.json();
-    const { status, payment_status } = body;
+    const { status } = body;
 
-    await c.env.DB.prepare(
-      `UPDATE orders 
-       SET status = COALESCE(?, status),
-           payment_status = COALESCE(?, payment_status)
-       WHERE id = ?`
-    )
-      .bind(status ? String(status) : null, payment_status ? String(payment_status) : null, id)
-      .run();
+    if (!status) {
+      return c.json({ error: 'Status kerja wajib disertakan' }, 400);
+    }
 
-    return c.json({ success: true, message: 'Status berhasil diperbarui' });
+    if (status === 'cancelled') {
+      await c.env.DB.prepare(
+        `UPDATE orders 
+         SET status = 'cancelled', 
+             payment_status = 'cancelled', 
+             updated_at = CURRENT_TIMESTAMP 
+         WHERE id = ?`
+      )
+        .bind(id)
+        .run();
+    } else {
+      await c.env.DB.prepare(
+        `UPDATE orders SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+      )
+        .bind(String(status), id)
+        .run();
+    }
+
+    return c.json({ success: true, message: 'Status kerja berhasil diperbarui' });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
   }
