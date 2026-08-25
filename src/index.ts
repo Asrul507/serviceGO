@@ -42,7 +42,7 @@ app.post('/api/services', async (c) => {
     const result = await c.env.DB.prepare(
       'INSERT INTO services (name, description, base_price, unit) VALUES (?, ?, ?, ?)'
     )
-      .bind(name, description || '', Number(base_price), unit || 'unit')
+      .bind(String(name), String(description || ''), Number(base_price), String(unit || 'unit'))
       .run();
 
     return c.json({ success: true, id: result.meta.last_row_id }, 201);
@@ -53,7 +53,7 @@ app.post('/api/services', async (c) => {
 
 app.put('/api/services/:id', async (c) => {
   try {
-    const id = c.req.param('id');
+    const id = Number(c.req.param('id'));
     const body = await c.req.json();
     const { name, description, base_price, unit } = body;
 
@@ -66,7 +66,13 @@ app.put('/api/services/:id', async (c) => {
            updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`
     )
-      .bind(name, description, base_price !== undefined ? Number(base_price) : null, unit, id)
+      .bind(
+        name ? String(name) : null,
+        description ? String(description) : null,
+        base_price !== undefined ? Number(base_price) : null,
+        unit ? String(unit) : null,
+        id
+      )
       .run();
 
     return c.json({ success: true, message: 'Layanan berhasil diupdate' });
@@ -77,7 +83,7 @@ app.put('/api/services/:id', async (c) => {
 
 app.delete('/api/services/:id', async (c) => {
   try {
-    const id = c.req.param('id');
+    const id = Number(c.req.param('id'));
     await c.env.DB.prepare('UPDATE services SET is_active = 0 WHERE id = ?')
       .bind(id)
       .run();
@@ -114,12 +120,11 @@ app.get('/api/orders', async (c) => {
     const { results: orders } = await c.env.DB.prepare(query).all();
     const orderList = (orders || []) as any[];
 
-    // Ambil detail rincian item layanan
     for (const ord of orderList) {
       try {
         const { results: items } = await c.env.DB.prepare(
           'SELECT service_name, qty, unit_price, subtotal FROM order_items WHERE order_id = ?'
-        ).bind(ord.id).all();
+        ).bind(Number(ord.id)).all();
         ord.items = items || [];
       } catch {
         ord.items = [];
@@ -137,7 +142,7 @@ app.post('/api/orders', async (c) => {
     const body = await c.req.json();
     const { customer_name, customer_phone, customer_address, items, scheduled_date, payment_method, notes } = body;
 
-    if (!customer_name || !customer_phone || !customer_address || !items || !items.length || !scheduled_date) {
+    if (!customer_name || !customer_phone || !customer_address || !items || !Array.isArray(items) || items.length === 0 || !scheduled_date) {
       return c.json({ error: 'Formulir belum lengkap atau keranjang kosong' }, 400);
     }
 
@@ -145,42 +150,65 @@ app.post('/api/orders', async (c) => {
     const custResult = await c.env.DB.prepare(
       'INSERT INTO customers (name, phone, address) VALUES (?, ?, ?)'
     )
-      .bind(customer_name, customer_phone, customer_address)
+      .bind(String(customer_name), String(customer_phone), String(customer_address))
       .run();
 
-    const customerId = custResult.meta.last_row_id;
+    const customerId = Number(custResult.meta.last_row_id);
 
     // 2. Hitung Grand Total
     let grandTotal = 0;
-    items.forEach((item: any) => {
-      grandTotal += Number(item.price) * Number(item.qty);
+    const validatedItems = items.map((item: any) => {
+      const price = Number(item.price) || 0;
+      const qty = Number(item.qty) || 1;
+      const subtotal = price * qty;
+      grandTotal += subtotal;
+      return {
+        id: Number(item.id),
+        name: String(item.name || 'Layanan'),
+        price: price,
+        qty: qty,
+        subtotal: subtotal
+      };
     });
 
-    const method = payment_method || 'cash';
-    const firstServiceId = items[0]?.id || 1;
+    const method = String(payment_method || 'cash');
+    const firstServiceId = validatedItems[0].id;
 
-    // 3. Simpan Pesanan Utama
+    // 3. Simpan Pesanan Induk ke Tabel orders
     const orderResult = await c.env.DB.prepare(
       `INSERT INTO orders (customer_id, service_id, qty, total_price, scheduled_date, status, payment_method, payment_status, notes)
        VALUES (?, ?, ?, ?, ?, 'pending', ?, 'unpaid', ?)`
     )
-      .bind(customerId, firstServiceId, items.length, grandTotal, scheduled_date, method, notes || '')
+      .bind(
+        customerId,
+        firstServiceId,
+        validatedItems.length,
+        grandTotal,
+        String(scheduled_date),
+        method,
+        String(notes || '')
+      )
       .run();
 
-    const orderId = orderResult.meta.last_row_id;
+    const orderId = Number(orderResult.meta.last_row_id);
 
-    // 4. Simpan Rincian Semua Item Layanan
-    for (const itm of items) {
-      const subtotal = Number(itm.price) * Number(itm.qty);
-      await c.env.DB.prepare(
+    // 4. Batch Insert Rincian Item ke order_items
+    const batchStatements = validatedItems.map((itm) => {
+      return c.env.DB.prepare(
         `INSERT INTO order_items (order_id, service_id, service_name, qty, unit_price, subtotal)
          VALUES (?, ?, ?, ?, ?, ?)`
-      )
-        .bind(orderId, itm.id, itm.name, Number(itm.qty), Number(itm.price), subtotal)
-        .run();
-    }
+      ).bind(orderId, itm.id, itm.name, itm.qty, itm.price, itm.subtotal);
+    });
 
-    return c.json({ success: true, order_id: orderId, total_price: grandTotal, payment_method: method }, 201);
+    await c.env.DB.batch(batchStatements);
+
+    return c.json({ 
+      success: true, 
+      order_id: orderId, 
+      total_price: grandTotal, 
+      payment_method: method 
+    }, 201);
+
   } catch (err: any) {
     return c.json({ error: `Database Error: ${err.message}` }, 500);
   }
@@ -188,7 +216,7 @@ app.post('/api/orders', async (c) => {
 
 app.patch('/api/orders/:id/status', async (c) => {
   try {
-    const id = c.req.param('id');
+    const id = Number(c.req.param('id'));
     const body = await c.req.json();
     const { status, payment_status } = body;
 
@@ -198,7 +226,7 @@ app.patch('/api/orders/:id/status', async (c) => {
            payment_status = COALESCE(?, payment_status)
        WHERE id = ?`
     )
-      .bind(status || null, payment_status || null, id)
+      .bind(status ? String(status) : null, payment_status ? String(payment_status) : null, id)
       .run();
 
     return c.json({ success: true, message: 'Status berhasil diperbarui' });
