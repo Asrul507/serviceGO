@@ -23,7 +23,7 @@
         </div>
         <div>
           <h1 class="text-base font-bold text-slate-900 leading-tight">serviceGO</h1>
-          <p class="text-xs text-slate-500">Panel Operasional & Keuangan</p>
+          <p class="text-xs text-slate-500">Panel Operasional & Penjadwalan</p>
         </div>
       </div>
 
@@ -35,11 +35,14 @@
     </div>
 
     <!-- Nav Tab -->
-    <div class="max-w-7xl mx-auto px-4 flex gap-6 border-t border-slate-100 text-sm font-medium">
-      <button id="tabOrdersBtn" onclick="switchTab('orders')" class="py-2.5 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition">
+    <div class="max-w-7xl mx-auto px-4 flex gap-6 border-t border-slate-100 text-sm font-medium overflow-x-auto">
+      <button id="tabOrdersBtn" onclick="switchTab('orders')" class="py-2.5 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition shrink-0">
         <i class="fa-solid fa-list-check"></i> Daftar Pesanan
       </button>
-      <button id="tabServicesBtn" onclick="switchTab('services')" class="py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition">
+      <button id="tabCalendarBtn" onclick="switchTab('calendar')" class="py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition shrink-0">
+        <i class="fa-solid fa-calendar-days"></i> Kalender Jadwal
+      </button>
+      <button id="tabServicesBtn" onclick="switchTab('services')" class="py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition shrink-0">
         <i class="fa-solid fa-tags"></i> Kelola Tarif Layanan
       </button>
     </div>
@@ -47,7 +50,7 @@
 
   <main class="max-w-7xl mx-auto px-4 py-6">
 
-    <!-- TAB 1: DAFTAR PESANAN -->
+    <!-- TAB 1: DAFTAR PESANAN (TABEL) -->
     <section id="tabOrders" class="space-y-4">
       <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-wrap items-center gap-2">
@@ -107,7 +110,68 @@
       </div>
     </section>
 
-    <!-- TAB 2: DAFTAR LAYANAN -->
+    <!-- TAB 2: KALENDER JADWAL (SPLIT VIEW) -->
+    <section id="tabCalendar" class="hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- Sisi Kiri: Monthly Grid (Col 7) -->
+        <div class="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+              <div class="flex items-center gap-2">
+                <h2 id="calendarMonthYear" class="font-bold text-slate-900 text-base">Bulan Tahun</h2>
+                <button onclick="goToToday()" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1 rounded-md transition">Hari Ini</button>
+              </div>
+              <div class="flex items-center gap-1">
+                <button onclick="changeMonth(-1)" class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition">
+                  <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
+                <button onclick="changeMonth(1)" class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition">
+                  <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Nama Hari -->
+            <div class="grid grid-cols-7 gap-1 text-center font-bold text-slate-400 text-xs mb-2">
+              <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+            </div>
+
+            <!-- Grid Tanggal -->
+            <div id="calendarGrid" class="grid grid-cols-7 gap-1.5 text-xs">
+              <!-- Render Tanggal via JS -->
+            </div>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-4 text-[11px] text-slate-500">
+            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> Tanggal Dipilih</div>
+            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Ada Jadwal</div>
+            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Hari Ini</div>
+          </div>
+        </div>
+
+        <!-- Sisi Kanan: Agenda Rincian Hari Terpilih (Col 5) -->
+        <div class="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col h-[560px]">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3 shrink-0">
+            <div>
+              <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Jadwal Tugas Lapangan</span>
+              <h3 id="selectedDateTitle" class="font-bold text-slate-900 text-sm">Pilih Tanggal</h3>
+            </div>
+            <span id="selectedDateBadgeCount" class="bg-blue-50 text-blue-700 font-bold text-xs px-2.5 py-1 rounded-full">0 Tugas</span>
+          </div>
+
+          <div id="agendaCardsContainer" class="flex-1 overflow-y-auto space-y-3 pr-1">
+            <div class="h-full flex flex-col items-center justify-center text-slate-400 text-xs">
+              <i class="fa-regular fa-calendar-check text-3xl mb-2 text-slate-300"></i>
+              Klik salah satu tanggal pada kalender untuk melihat daftar tugas.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- TAB 3: DAFTAR LAYANAN -->
     <section id="tabServices" class="hidden space-y-4">
       <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
         <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -188,28 +252,210 @@
     let ordersData = [];
     let currentFilter = 'all';
 
+    // Calendar State
+    let calCurrentDate = new Date();
+    let selectedDateString = new Date().toISOString().split('T')[0];
+
+    const MONTH_NAMES = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+
     function switchTab(tab) {
       const tabOrders = document.getElementById('tabOrders');
+      const tabCalendar = document.getElementById('tabCalendar');
       const tabServices = document.getElementById('tabServices');
+      
       const btnOrders = document.getElementById('tabOrdersBtn');
+      const btnCalendar = document.getElementById('tabCalendarBtn');
       const btnServices = document.getElementById('tabServicesBtn');
+
+      const activeClass = 'py-2.5 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition shrink-0';
+      const inactiveClass = 'py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition shrink-0';
+
+      tabOrders.classList.add('hidden');
+      tabCalendar.classList.add('hidden');
+      tabServices.classList.add('hidden');
+
+      btnOrders.className = inactiveClass;
+      btnCalendar.className = inactiveClass;
+      btnServices.className = inactiveClass;
 
       if (tab === 'orders') {
         tabOrders.classList.remove('hidden');
-        tabServices.classList.add('hidden');
-        btnOrders.className = 'py-2.5 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition';
-        btnServices.className = 'py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition';
+        btnOrders.className = activeClass;
         fetchOrders();
+      } else if (tab === 'calendar') {
+        tabCalendar.classList.remove('hidden');
+        btnCalendar.className = activeClass;
+        renderCalendar();
+        renderAgendaForDate(selectedDateString);
       } else {
         tabServices.classList.remove('hidden');
-        tabOrders.classList.add('hidden');
-        btnServices.className = 'py-2.5 border-b-2 border-blue-600 text-blue-600 flex items-center gap-2 transition';
-        btnOrders.className = 'py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800 flex items-center gap-2 transition';
+        btnServices.className = activeClass;
         fetchServices();
       }
     }
 
-    // SERVICES
+    // ================= KALENDER & AGENDA =================
+    function changeMonth(delta) {
+      calCurrentDate.setMonth(calCurrentDate.getMonth() + delta);
+      renderCalendar();
+    }
+
+    function goToToday() {
+      calCurrentDate = new Date();
+      selectedDateString = new Date().toISOString().split('T')[0];
+      renderCalendar();
+      renderAgendaForDate(selectedDateString);
+    }
+
+    function renderCalendar() {
+      const year = calCurrentDate.getFullYear();
+      const month = calCurrentDate.getMonth();
+
+      document.getElementById('calendarMonthYear').textContent = `${MONTH_NAMES[month]} ${year}`;
+
+      const firstDayIndex = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
+      const prevMonthLastDay = new Date(year, month, 0).getDate();
+
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      // Petakan jumlah order per tanggal
+      const ordersCountByDate = {};
+      ordersData.forEach(o => {
+        if (o.scheduled_date) {
+          ordersCountByDate[o.scheduled_date] = (ordersCountByDate[o.scheduled_date] || 0) + 1;
+        }
+      });
+
+      // Hari dari bulan sebelumnya (abu-abu)
+      for (let i = firstDayIndex; i > 0; i--) {
+        const dayNum = prevMonthLastDay - i + 1;
+        grid.innerHTML += `<div class="h-20 p-1.5 border border-slate-100 rounded-xl bg-slate-50/50 text-slate-300 font-medium text-[11px]">${dayNum}</div>`;
+      }
+
+      // Hari bulan berjalan
+      for (let day = 1; day <= totalDays; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const count = ordersCountByDate[dateStr] || 0;
+        const isSelected = (dateStr === selectedDateString);
+        const isToday = (dateStr === todayStr);
+
+        let borderBg = 'border-slate-200 bg-white hover:border-blue-300';
+        let dayNumColor = 'text-slate-700';
+
+        if (isSelected) {
+          borderBg = 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-500/20';
+          dayNumColor = 'text-blue-600 font-bold';
+        } else if (isToday) {
+          borderBg = 'border-amber-400 bg-amber-50/30';
+          dayNumColor = 'text-amber-700 font-bold';
+        }
+
+        let badgeHtml = '';
+        if (count > 0) {
+          badgeHtml = `
+            <div class="mt-1">
+              <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ${count} Kerja
+              </span>
+            </div>
+          `;
+        }
+
+        grid.innerHTML += `
+          <div onclick="selectCalendarDate('${dateStr}')" class="h-20 p-2 border ${borderBg} rounded-xl cursor-pointer transition flex flex-col justify-between shadow-2xs">
+            <div class="flex justify-between items-start">
+              <span class="text-xs ${dayNumColor}">${day}</span>
+              ${isToday ? '<span class="text-[9px] bg-amber-500 text-white font-bold px-1 rounded">Hari Ini</span>' : ''}
+            </div>
+            ${badgeHtml}
+          </div>
+        `;
+      }
+    }
+
+    function selectCalendarDate(dateStr) {
+      selectedDateString = dateStr;
+      renderCalendar();
+      renderAgendaForDate(dateStr);
+    }
+
+    function renderAgendaForDate(dateStr) {
+      const container = document.getElementById('agendaCardsContainer');
+      const badgeCount = document.getElementById('selectedDateBadgeCount');
+      const title = document.getElementById('selectedDateTitle');
+
+      const dateObj = new Date(dateStr);
+      const formattedDate = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      title.textContent = formattedDate;
+
+      const filtered = ordersData.filter(o => o.scheduled_date === dateStr);
+      badgeCount.textContent = `${filtered.length} Tugas`;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="h-full flex flex-col items-center justify-center text-slate-400 text-xs py-10">
+            <i class="fa-solid fa-mug-hot text-3xl mb-2 text-slate-300"></i>
+            Tidak ada jadwal pekerjaan pada tanggal ini.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(order => {
+        const itemsList = (order.items && order.items.length > 0)
+          ? order.items.map(it => `• ${escapeHtml(it.service_name)} (${it.qty}x)`).join('<br/>')
+          : 'Layanan terdaftar';
+
+        const showVerifyCashBtn = (order.payment_method === 'cash' && order.payment_status !== 'paid');
+
+        return `
+          <div class="border border-slate-200 rounded-xl p-3.5 hover:border-blue-400 transition bg-slate-50/40 shadow-xs space-y-2.5">
+            <div class="flex items-start justify-between">
+              <div>
+                <span class="font-mono text-[10px] text-slate-400 font-semibold">#${order.id}</span>
+                <div class="font-bold text-slate-900 text-xs">${escapeHtml(order.customer_name)}</div>
+              </div>
+              <div>${getStatusBadge(order.status)}</div>
+            </div>
+
+            <div class="text-[11px] text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 space-y-1">
+              <div class="font-semibold text-slate-800 text-[11px]">Rincian Layanan:</div>
+              <div class="text-slate-500 leading-relaxed">${itemsList}</div>
+              <div class="pt-1 font-bold text-slate-900">Total: Rp ${Number(order.total_price).toLocaleString('id-ID')}</div>
+            </div>
+
+            <div class="text-[11px] text-slate-500 flex items-start gap-1.5">
+              <i class="fa-solid fa-location-dot text-rose-500 mt-0.5"></i>
+              <span class="truncate">${escapeHtml(order.customer_address)}</span>
+            </div>
+
+            <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+              <a href="https://wa.me/${formatPhone(order.customer_phone)}" target="_blank" class="text-emerald-600 hover:text-emerald-700 font-semibold text-xs flex items-center gap-1.5">
+                <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp Pelanggan
+              </a>
+              <div class="flex items-center gap-1.5">
+                ${showVerifyCashBtn ? `
+                  <button onclick="verifyCashPayment(${order.id}, ${order.total_price})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1 px-2 rounded text-[10px] transition">
+                    Verifikasi Tunai
+                  </button>
+                ` : `
+                  ${order.payment_status === 'paid' ? '<span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"><i class="fa-solid fa-check mr-1"></i>Lunas</span>' : '<span class="text-[10px] text-slate-400">Belum Lunas</span>'}
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ================= SERVICES =================
     async function fetchServices() {
       try {
         const res = await fetch('/api/services');
@@ -301,12 +547,14 @@
       if (res.ok) fetchServices();
     }
 
-    // ORDERS
+    // ================= ORDERS =================
     async function fetchOrders() {
       try {
         const res = await fetch('/api/orders');
         ordersData = await res.json();
         renderFilteredOrders();
+        renderCalendar();
+        renderAgendaForDate(selectedDateString);
       } catch (err) {
         document.getElementById('ordersTableBody').innerHTML = `<tr><td colspan="8" class="py-6 text-center text-red-500"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Gagal mengambil data pesanan.</td></tr>`;
       }
@@ -356,12 +604,10 @@
       if (order.payment_status === 'paid') {
         return '<span class="bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-full text-[11px] inline-flex items-center gap-1.5 shadow-2xs"><i class="fa-solid fa-lock text-emerald-600"></i> Lunas Terverifikasi</span>';
       }
-      
       if (order.payment_method === 'cash') {
         return '<span class="bg-amber-50 text-amber-800 border border-amber-200 font-semibold px-2 py-0.5 rounded-full text-[10px] inline-flex items-center gap-1"><i class="fa-solid fa-clock"></i> Belum Bayar (COD)</span>';
       }
-
-      return '<span class="bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full text-[10px] inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-amber-500"></i> Menunggu Pembayaran</span>';
+      return '<span class="bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full text-[10px] inline-flex items-center gap-1"><i class="fa-solid fa-hourglass-half text-amber-500"></i> Menunggu Bayar</span>';
     }
 
     function getStatusBadge(status) {
@@ -386,7 +632,6 @@
           ? order.items.map(it => `<div><i class="fa-solid fa-check text-[10px] text-blue-500 mr-1"></i><span class="font-medium">${escapeHtml(it.service_name)}</span> (${it.qty}x)</div>`).join('')
           : '<span class="text-slate-400">-</span>';
 
-        // Tombol aksi khusus jika pesanan adalah COD dan belum dibayar
         const showVerifyCashBtn = (order.payment_method === 'cash' && order.payment_status !== 'paid');
 
         return `
@@ -453,7 +698,7 @@
 
     async function verifyCashPayment(orderId, totalPrice) {
       const formatted = 'Rp ' + Number(totalPrice).toLocaleString('id-ID');
-      if (!confirm(`Konfirmasi pembayaran tunai sebesar ${formatted} telah diterima oleh teknisi di lokasi?\n\nCatatan: Status akan langsung terkunci LUNAS dan tidak dapat diubah lagi.`)) {
+      if (!confirm(`Konfirmasi pembayaran tunai sebesar ${formatted} telah diterima oleh teknisi di lokasi?\n\nCatatan: Status akan langsung terkunci LUNAS.`)) {
         return;
       }
 
