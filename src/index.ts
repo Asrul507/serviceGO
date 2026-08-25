@@ -6,7 +6,7 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// 1. Redirect otomatis subdomain booking/order ke booking.html
+// 1. Redirect Subdomain Pelanggan
 app.use('*', async (c, next) => {
   const url = new URL(c.req.url);
   if ((url.hostname.startsWith('orders-go.') || url.hostname.startsWith('booking.')) && url.pathname === '/') {
@@ -16,7 +16,7 @@ app.use('*', async (c, next) => {
 });
 
 // ==========================================
-// 2. ENDPOINT LAYANAN (SERVICES)
+// 2. ENDPOINT SERVICES (CRUD)
 // ==========================================
 
 app.get('/api/services', async (c) => {
@@ -31,7 +31,7 @@ app.post('/api/services', async (c) => {
   const { name, description, base_price, unit } = body;
 
   if (!name || base_price === undefined) {
-    return c.json({ error: 'Nama dan harga wajib diisi' }, 400);
+    return c.json({ error: 'Nama dan tarif wajib diisi' }, 400);
   }
 
   const result = await c.env.DB.prepare(
@@ -73,14 +73,13 @@ app.delete('/api/services/:id', async (c) => {
 });
 
 // ==========================================
-// 3. ENDPOINT PESANAN (ORDERS)
+// 3. ENDPOINT ORDERS (MULTI-ITEMS CART)
 // ==========================================
 
 app.get('/api/orders', async (c) => {
   const query = `
     SELECT 
       orders.id,
-      orders.qty,
       orders.total_price,
       orders.scheduled_date,
       orders.status,
@@ -90,26 +89,34 @@ app.get('/api/orders', async (c) => {
       orders.created_at,
       customers.name AS customer_name,
       customers.phone AS customer_phone,
-      customers.address AS customer_address,
-      services.name AS service_name,
-      services.unit AS service_unit
+      customers.address AS customer_address
     FROM orders
     JOIN customers ON orders.customer_id = customers.id
-    JOIN services ON orders.service_id = services.id
     ORDER BY orders.id DESC
   `;
-  const { results } = await c.env.DB.prepare(query).all();
-  return c.json(results || []);
+  const { results: orders } = await c.env.DB.prepare(query).all();
+
+  // Ambil rincian item layanan untuk setiap pesanan
+  const orderList = orders || [];
+  for (const ord of orderList) {
+    const { results: items } = await c.env.DB.prepare(
+      'SELECT service_name, qty, unit_price, subtotal FROM order_items WHERE order_id = ?'
+    ).bind(ord.id).all();
+    ord.items = items || [];
+  }
+
+  return c.json(orderList);
 });
 
 app.post('/api/orders', async (c) => {
   const body = await c.req.json();
-  const { customer_name, customer_phone, customer_address, service_id, qty, scheduled_date, payment_method, notes } = body;
+  const { customer_name, customer_phone, customer_address, items, scheduled_date, payment_method, notes } = body;
 
-  if (!customer_name || !customer_phone || !customer_address || !service_id || !scheduled_date) {
-    return c.json({ error: 'Data formulir pesanan belum lengkap' }, 400);
+  if (!customer_name || !customer_phone || !customer_address || !items || !items.length || !scheduled_date) {
+    return c.json({ error: 'Data formulir pesanan belum lengkap atau keranjang kosong' }, 400);
   }
 
+  // 1. Simpan Data Pelanggan
   const custResult = await c.env.DB.prepare(
     'INSERT INTO customers (name, phone, address) VALUES (?, ?, ?)'
   )
@@ -118,26 +125,38 @@ app.post('/api/orders', async (c) => {
 
   const customerId = custResult.meta.last_row_id;
 
-  const service = await c.env.DB.prepare('SELECT base_price FROM services WHERE id = ?')
-    .bind(service_id)
-    .first<{ base_price: number }>();
+  // 2. Hitung Grand Total dari seluruh item di keranjang
+  let grandTotal = 0;
+  items.forEach((item: any) => {
+    grandTotal += Number(item.price) * Number(item.qty);
+  });
 
-  const unitPrice = service ? service.base_price : 0;
-  const quantity = Number(qty) || 1;
-  const totalPrice = unitPrice * quantity;
   const method = payment_method || 'cash';
 
+  // 3. Simpan Pesanan Utama
   const orderResult = await c.env.DB.prepare(
     `INSERT INTO orders (customer_id, service_id, qty, total_price, scheduled_date, status, payment_method, payment_status, notes)
      VALUES (?, ?, ?, ?, ?, 'pending', ?, 'unpaid', ?)`
   )
-    .bind(customerId, service_id, quantity, totalPrice, scheduled_date, method, notes || '')
+    .bind(customerId, items[0].id, items.length, grandTotal, scheduled_date, method, notes || '')
     .run();
 
-  return c.json({ success: true, order_id: orderResult.meta.last_row_id, total_price: totalPrice, payment_method: method }, 201);
+  const orderId = orderResult.meta.last_row_id;
+
+  // 4. Simpan Rincian Semua Item Layanan
+  for (const itm of items) {
+    const subtotal = Number(itm.price) * Number(itm.qty);
+    await c.env.DB.prepare(
+      `INSERT INTO order_items (order_id, service_id, service_name, qty, unit_price, subtotal)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+      .bind(orderId, itm.id, itm.name, itm.qty, itm.price, subtotal)
+      .run();
+  }
+
+  return c.json({ success: true, order_id: orderId, total_price: grandTotal, payment_method: method }, 201);
 });
 
-// Update status operasional & pembayaran
 app.patch('/api/orders/:id/status', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
@@ -152,7 +171,7 @@ app.patch('/api/orders/:id/status', async (c) => {
     .bind(status || null, payment_status || null, id)
     .run();
 
-  return c.json({ success: true, message: 'Data pesanan berhasil diperbarui' });
+  return c.json({ success: true, message: 'Status berhasil diperbarui' });
 });
 
 export default app;
