@@ -8,9 +8,7 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// ============================================================
-// PURE JAVASCRIPT MD5 HASH (Kompatibel 100% Cloudflare Workers)
-// ============================================================
+// Pure JS MD5 Hash
 function md5(string: string): string {
   function rotateLeft(lValue: number, iShiftBits: number) {
     return (lValue << iShiftBits) | (lValue >>> (32 - iShiftBits));
@@ -316,7 +314,7 @@ app.post('/api/orders', async (c) => {
 
     const customerId = Number(custResult.meta.last_row_id);
 
-    // 2. Hitung Total
+    // 2. Hitung Grand Total
     let grandTotal = 0;
     const validatedItems = items.map((item: any) => {
       const price = Number(item.price) || 0;
@@ -365,7 +363,7 @@ app.post('/api/orders', async (c) => {
 
     let paymentUrl = null;
 
-    // 5. Request Pembayaran Duitku Sandbox
+    // 5. Request Invoice ke Duitku Sandbox (POP / Full Payment Option)
     if (method === 'duitku') {
       const merchantCode = c.env.DUITKU_MERCHANT_CODE || 'DS34561';
       const apiKey = c.env.DUITKU_API_KEY || '4c8a97765b05ce46465b5598f8bdfbe6';
@@ -377,6 +375,7 @@ app.post('/api/orders', async (c) => {
       const duitkuPayload = {
         merchantCode: merchantCode,
         paymentAmount: paymentAmount,
+        paymentMethod: 'VC', // Default channel atau opsi kasir Duitku
         merchantOrderId: merchantOrderId,
         productDetails: `Pemesanan Layanan #${orderId}`,
         email: 'customer@servicego.id',
@@ -400,7 +399,7 @@ app.post('/api/orders', async (c) => {
           paymentUrl = duitkuData.paymentUrl;
         } else {
           return c.json({ 
-            error: `Duitku Sandbox Response: ${duitkuData.statusMessage || JSON.stringify(duitkuData)}` 
+            error: `Duitku Sandbox Response: ${duitkuData.statusMessage || duitkuData.Message || JSON.stringify(duitkuData)}` 
           }, 400);
         }
       } catch (e: any) {
@@ -451,7 +450,7 @@ app.post('/api/duitku/callback', async (c) => {
   }
 });
 
-// Update Status Manual dari Admin
+// Update Status Manual Admin
 app.patch('/api/orders/:id/status', async (c) => {
   try {
     const id = Number(c.req.param('id'));
