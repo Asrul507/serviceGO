@@ -192,15 +192,15 @@ app.post('/api/orders', async (c) => {
 
     const orderId = Number(orderResult.meta.last_row_id);
 
-    // 4. Batch Insert Rincian Item ke order_items
-    const batchStatements = validatedItems.map((itm) => {
-      return c.env.DB.prepare(
+    // 4. Simpan Rincian Item Satu per Satu (Menggantikan batch)
+    for (const itm of validatedItems) {
+      await c.env.DB.prepare(
         `INSERT INTO order_items (order_id, service_id, service_name, qty, unit_price, subtotal)
          VALUES (?, ?, ?, ?, ?, ?)`
-      ).bind(orderId, itm.id, itm.name, itm.qty, itm.price, itm.subtotal);
-    });
-
-    await c.env.DB.batch(batchStatements);
+      )
+        .bind(orderId, itm.id, itm.name, itm.qty, itm.price, itm.subtotal)
+        .run();
+    }
 
     return c.json({ 
       success: true, 
