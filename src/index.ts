@@ -2,9 +2,19 @@ import { Hono } from 'hono';
 
 type Bindings = {
   DB: D1Database;
+  DUITKU_MERCHANT_CODE?: string;
+  DUITKU_API_KEY?: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
+
+// Helper Hash MD5 dengan Web Crypto Workers
+async function md5(message: string): Promise<string> {
+  const msgUint8 = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('MD5', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 // 1. Redirect Subdomain Pelanggan
 app.use('*', async (c, next) => {
@@ -95,7 +105,7 @@ app.delete('/api/services/:id', async (c) => {
 });
 
 // ==========================================
-// 3. ENDPOINT ORDERS (MULTI-ITEMS CART)
+// 3. ENDPOINT ORDERS & DUITKU INTEGRATION
 // ==========================================
 
 app.get('/api/orders', async (c) => {
@@ -192,7 +202,7 @@ app.post('/api/orders', async (c) => {
 
     const orderId = Number(orderResult.meta.last_row_id);
 
-    // 4. Simpan Rincian Item Satu per Satu (Menggantikan batch)
+    // 4. Simpan Rincian Item Satu per Satu
     for (const itm of validatedItems) {
       await c.env.DB.prepare(
         `INSERT INTO order_items (order_id, service_id, service_name, qty, unit_price, subtotal)
@@ -202,11 +212,53 @@ app.post('/api/orders', async (c) => {
         .run();
     }
 
+    let paymentUrl = null;
+
+    // 5. Request Payment URL ke Duitku Sandbox
+    if (method === 'duitku') {
+      const merchantCode = c.env.DUITKU_MERCHANT_CODE || 'DS34561';
+      const apiKey = c.env.DUITKU_API_KEY || '4c8a97765b05ce46465b5598f8bdfbe6';
+      const merchantOrderId = `ORDER-${orderId}-${Date.now()}`;
+      const paymentAmount = grandTotal;
+      
+      const signature = await md5(`${merchantCode}${merchantOrderId}${paymentAmount}${apiKey}`);
+
+      const duitkuPayload = {
+        merchantCode: merchantCode,
+        paymentAmount: paymentAmount,
+        merchantOrderId: merchantOrderId,
+        productDetails: `Pemesanan Layanan #${orderId}`,
+        email: 'customer@servicego.id',
+        phoneNumber: String(customer_phone),
+        additionalParam: String(orderId),
+        callbackUrl: 'https://servicego.gpro.my.id/api/duitku/callback',
+        returnUrl: 'https://orders-go.gpro.my.id/booking.html',
+        signature: signature,
+        expiryPeriod: 1440
+      };
+
+      try {
+        const duitkuRes = await fetch('https://sandbox.duitku.com/webapi/api/merchant/v2/inquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(duitkuPayload)
+        });
+
+        const duitkuData: any = await duitkuRes.json();
+        if (duitkuData && duitkuData.paymentUrl) {
+          paymentUrl = duitkuData.paymentUrl;
+        }
+      } catch (e) {
+        console.error('Duitku Inquiry Error:', e);
+      }
+    }
+
     return c.json({ 
       success: true, 
       order_id: orderId, 
       total_price: grandTotal, 
-      payment_method: method 
+      payment_method: method,
+      payment_url: paymentUrl
     }, 201);
 
   } catch (err: any) {
@@ -214,6 +266,37 @@ app.post('/api/orders', async (c) => {
   }
 });
 
+// Endpoint Callback Notifikasi Otomatis Duitku
+app.post('/api/duitku/callback', async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    const merchantCode = body['merchantCode'] as string;
+    const amount = body['amount'] as string;
+    const merchantOrderId = body['merchantOrderId'] as string;
+    const signature = body['signature'] as string;
+    const resultCode = body['resultCode'] as string;
+    const additionalParam = body['additionalParam'] as string;
+
+    const apiKey = c.env.DUITKU_API_KEY || '4c8a97765b05ce46465b5598f8bdfbe6';
+    const calcSignature = await md5(`${merchantCode}${amount}${merchantOrderId}${apiKey}`);
+
+    if (calcSignature === signature && resultCode === '00') {
+      const orderId = Number(additionalParam);
+      if (orderId) {
+        await c.env.DB.prepare(
+          "UPDATE orders SET payment_status = 'paid', status = 'in_progress' WHERE id = ?"
+        ).bind(orderId).run();
+      }
+      return c.text('SUCCESS');
+    }
+
+    return c.text('BAD SIGNATURE OR FAILED TRANSACTION', 400);
+  } catch (err: any) {
+    return c.text(`Error: ${err.message}`, 500);
+  }
+});
+
+// Update Status Manual Admin
 app.patch('/api/orders/:id/status', async (c) => {
   try {
     const id = Number(c.req.param('id'));
