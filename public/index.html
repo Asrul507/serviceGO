@@ -145,7 +145,7 @@
 
           <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-4 text-[11px] text-slate-500">
             <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> Tanggal Dipilih</div>
-            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Ada Jadwal</div>
+            <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Ada Jadwal Aktif</div>
             <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Hari Ini</div>
           </div>
         </div>
@@ -157,7 +157,7 @@
               <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Jadwal Tugas Lapangan</span>
               <h3 id="selectedDateTitle" class="font-bold text-slate-900 text-sm">Pilih Tanggal</h3>
             </div>
-            <span id="selectedDateBadgeCount" class="bg-blue-50 text-blue-700 font-bold text-xs px-2.5 py-1 rounded-full">0 Tugas</span>
+            <span id="selectedDateBadgeCount" class="bg-blue-50 text-blue-700 font-bold text-xs px-2.5 py-1 rounded-full">0 Tugas Aktif</span>
           </div>
 
           <div id="agendaCardsContainer" class="flex-1 overflow-y-auto space-y-3 pr-1">
@@ -325,15 +325,15 @@
 
       const todayStr = new Date().toISOString().split('T')[0];
 
-      // Petakan jumlah order per tanggal
-      const ordersCountByDate = {};
+      // Petakan jumlah order per tanggal HANYA untuk pesanan yang TIDAK BATAL
+      const activeOrdersCountByDate = {};
       ordersData.forEach(o => {
-        if (o.scheduled_date) {
-          ordersCountByDate[o.scheduled_date] = (ordersCountByDate[o.scheduled_date] || 0) + 1;
+        if (o.scheduled_date && o.status !== 'cancelled') {
+          activeOrdersCountByDate[o.scheduled_date] = (activeOrdersCountByDate[o.scheduled_date] || 0) + 1;
         }
       });
 
-      // Hari dari bulan sebelumnya (abu-abu)
+      // Hari bulan sebelumnya
       for (let i = firstDayIndex; i > 0; i--) {
         const dayNum = prevMonthLastDay - i + 1;
         grid.innerHTML += `<div class="h-20 p-1.5 border border-slate-100 rounded-xl bg-slate-50/50 text-slate-300 font-medium text-[11px]">${dayNum}</div>`;
@@ -342,7 +342,7 @@
       // Hari bulan berjalan
       for (let day = 1; day <= totalDays; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const count = ordersCountByDate[dateStr] || 0;
+        const count = activeOrdersCountByDate[dateStr] || 0;
         const isSelected = (dateStr === selectedDateString);
         const isToday = (dateStr === todayStr);
 
@@ -362,7 +362,7 @@
           badgeHtml = `
             <div class="mt-1">
               <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold px-1.5 py-0.5 rounded-md">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ${count} Kerja
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> ${count} Tugas
               </span>
             </div>
           `;
@@ -395,10 +395,13 @@
       const formattedDate = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       title.textContent = formattedDate;
 
-      const filtered = ordersData.filter(o => o.scheduled_date === dateStr);
-      badgeCount.textContent = `${filtered.length} Tugas`;
+      // Filter pesanan di tanggal ini
+      const ordersOnDate = ordersData.filter(o => o.scheduled_date === dateStr);
+      const activeOrders = ordersOnDate.filter(o => o.status !== 'cancelled');
+      
+      badgeCount.textContent = `${activeOrders.length} Tugas Aktif`;
 
-      if (filtered.length === 0) {
+      if (ordersOnDate.length === 0) {
         container.innerHTML = `
           <div class="h-full flex flex-col items-center justify-center text-slate-400 text-xs py-10">
             <i class="fa-solid fa-mug-hot text-3xl mb-2 text-slate-300"></i>
@@ -408,21 +411,25 @@
         return;
       }
 
-      container.innerHTML = filtered.map(order => {
+      container.innerHTML = ordersOnDate.map(order => {
+        const isCancelled = (order.status === 'cancelled');
         const itemsList = (order.items && order.items.length > 0)
           ? order.items.map(it => `• ${escapeHtml(it.service_name)} (${it.qty}x)`).join('<br/>')
           : 'Layanan terdaftar';
 
-        const showVerifyCashBtn = (order.payment_method === 'cash' && order.payment_status !== 'paid');
+        const showVerifyCashBtn = (order.payment_method === 'cash' && order.payment_status !== 'paid' && !isCancelled);
 
         return `
-          <div class="border border-slate-200 rounded-xl p-3.5 hover:border-blue-400 transition bg-slate-50/40 shadow-xs space-y-2.5">
+          <div class="border ${isCancelled ? 'border-rose-200 bg-rose-50/30 opacity-75' : 'border-slate-200 bg-slate-50/40'} rounded-xl p-3.5 hover:border-blue-400 transition shadow-xs space-y-2.5">
             <div class="flex items-start justify-between">
               <div>
                 <span class="font-mono text-[10px] text-slate-400 font-semibold">#${order.id}</span>
-                <div class="font-bold text-slate-900 text-xs">${escapeHtml(order.customer_name)}</div>
+                <div class="font-bold text-slate-900 text-xs ${isCancelled ? 'line-through text-slate-500' : ''}">${escapeHtml(order.customer_name)}</div>
               </div>
-              <div>${getStatusBadge(order.status)}</div>
+              <div class="flex flex-col items-end gap-1">
+                ${getStatusBadge(order.status)}
+                ${getPaymentStatusDisplay(order)}
+              </div>
             </div>
 
             <div class="text-[11px] text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 space-y-1">
@@ -436,18 +443,26 @@
               <span class="truncate">${escapeHtml(order.customer_address)}</span>
             </div>
 
-            <div class="flex items-center justify-between pt-1 border-t border-slate-100">
+            <div class="flex items-center justify-between pt-1 border-t border-slate-100 gap-2">
               <a href="https://wa.me/${formatPhone(order.customer_phone)}" target="_blank" class="text-emerald-600 hover:text-emerald-700 font-semibold text-xs flex items-center gap-1.5">
-                <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp Pelanggan
+                <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
               </a>
+
               <div class="flex items-center gap-1.5">
+                <!-- Dropdown Status Cepat di Kalender -->
+                <select onchange="updateOrderStatus(${order.id}, this.value)" class="bg-white text-slate-700 border border-slate-200 text-[10px] rounded px-1.5 py-1 focus:outline-none">
+                  <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>Menunggu</option>
+                  <option value="in_progress" ${order.status === 'in_progress' ? 'selected' : ''}>Dikerjakan</option>
+                  <option value="completed" ${order.status === 'completed' ? 'selected' : ''}>Selesai</option>
+                  <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Batal</option>
+                </select>
+
+                <!-- Tombol Verifikasi Tunai Cepat di Kalender -->
                 ${showVerifyCashBtn ? `
-                  <button onclick="verifyCashPayment(${order.id}, ${order.total_price})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1 px-2 rounded text-[10px] transition">
-                    Verifikasi Tunai
+                  <button onclick="verifyCashPayment(${order.id}, ${order.total_price})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-1 px-2 rounded text-[10px] flex items-center gap-1 transition shadow-xs">
+                    <i class="fa-solid fa-receipt"></i> Verifikasi Tunai
                   </button>
-                ` : `
-                  ${order.payment_status === 'paid' ? '<span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200"><i class="fa-solid fa-check mr-1"></i>Lunas</span>' : '<span class="text-[10px] text-slate-400">Belum Lunas</span>'}
-                `}
+                ` : ''}
               </div>
             </div>
           </div>
@@ -601,6 +616,9 @@
     }
 
     function getPaymentStatusDisplay(order) {
+      if (order.status === 'cancelled' || order.payment_status === 'cancelled') {
+        return '<span class="bg-rose-50 text-rose-700 border border-rose-200 font-semibold px-2 py-0.5 rounded-full text-[10px] inline-flex items-center gap-1"><i class="fa-solid fa-circle-xmark"></i> Batal</span>';
+      }
       if (order.payment_status === 'paid') {
         return '<span class="bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-1 rounded-full text-[11px] inline-flex items-center gap-1.5 shadow-2xs"><i class="fa-solid fa-lock text-emerald-600"></i> Lunas Terverifikasi</span>';
       }
@@ -628,17 +646,18 @@
       }
 
       tbody.innerHTML = data.map(order => {
+        const isCancelled = (order.status === 'cancelled');
         const itemsHtml = (order.items && order.items.length > 0) 
           ? order.items.map(it => `<div><i class="fa-solid fa-check text-[10px] text-blue-500 mr-1"></i><span class="font-medium">${escapeHtml(it.service_name)}</span> (${it.qty}x)</div>`).join('')
           : '<span class="text-slate-400">-</span>';
 
-        const showVerifyCashBtn = (order.payment_method === 'cash' && order.payment_status !== 'paid');
+        const showVerifyCashBtn = (order.payment_method === 'cash' && order.payment_status !== 'paid' && !isCancelled);
 
         return `
-          <tr class="hover:bg-slate-50 transition">
+          <tr class="hover:bg-slate-50 transition ${isCancelled ? 'bg-slate-50/50 opacity-70' : ''}">
             <td class="py-3 px-4 font-mono font-medium text-slate-500">#${order.id}</td>
             <td class="py-3 px-4">
-              <div class="font-semibold text-slate-900">${escapeHtml(order.customer_name)}</div>
+              <div class="font-semibold text-slate-900 ${isCancelled ? 'line-through text-slate-400' : ''}">${escapeHtml(order.customer_name)}</div>
               <a href="https://wa.me/${formatPhone(order.customer_phone)}" target="_blank" class="text-[11px] text-emerald-600 hover:underline flex items-center gap-1 mt-0.5">
                 <i class="fa-brands fa-whatsapp"></i> ${escapeHtml(order.customer_phone)}
               </a>
@@ -698,7 +717,7 @@
 
     async function verifyCashPayment(orderId, totalPrice) {
       const formatted = 'Rp ' + Number(totalPrice).toLocaleString('id-ID');
-      if (!confirm(`Konfirmasi pembayaran tunai sebesar ${formatted} telah diterima oleh teknisi di lokasi?\n\nCatatan: Status akan langsung terkunci LUNAS.`)) {
+      if (!confirm(`Konfirmasi pembayaran tunai sebesar ${formatted} telah diterima oleh teknisi di lokasi?\n\nCatatan: Status akan langsung terkunci LUNAS dan pekerjaan selesai.`)) {
         return;
       }
 
