@@ -2,6 +2,12 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
+  <!-- Script Redirect Otomatis Subdomain Pelanggan -->
+  <script>
+    if (window.location.hostname.includes('orders-go')) {
+      window.location.replace('/booking.html');
+    }
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>serviceGO - Manajemen Layanan & Booking AC</title>
   <script src="https://cdn.tailwindcss.com"></script>
