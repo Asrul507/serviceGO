@@ -6,15 +6,12 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// 1. Redirect otomatis subdomain pelanggan ke booking.html
+// 1. Redirect otomatis subdomain booking/order ke booking.html
 app.use('*', async (c, next) => {
   const url = new URL(c.req.url);
-  
-  // Jika diakses melalui subdomain orders-go dan membuka halaman utama "/"
-  if (url.hostname.startsWith('orders-go.') && url.pathname === '/') {
+  if ((url.hostname.startsWith('orders-go.') || url.hostname.startsWith('booking.')) && url.pathname === '/') {
     return c.redirect('/booking.html');
   }
-  
   await next();
 });
 
@@ -22,7 +19,6 @@ app.use('*', async (c, next) => {
 // 2. ENDPOINT LAYANAN (SERVICES)
 // ==========================================
 
-// GET: Ambil semua layanan aktif
 app.get('/api/services', async (c) => {
   const { results } = await c.env.DB.prepare(
     'SELECT * FROM services WHERE is_active = 1 ORDER BY id DESC'
@@ -30,7 +26,6 @@ app.get('/api/services', async (c) => {
   return c.json(results || []);
 });
 
-// POST: Tambah layanan baru
 app.post('/api/services', async (c) => {
   const body = await c.req.json();
   const { name, description, base_price, unit } = body;
@@ -48,7 +43,6 @@ app.post('/api/services', async (c) => {
   return c.json({ success: true, id: result.meta.last_row_id }, 201);
 });
 
-// PUT: Edit layanan
 app.put('/api/services/:id', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
@@ -69,7 +63,6 @@ app.put('/api/services/:id', async (c) => {
   return c.json({ success: true, message: 'Layanan berhasil diupdate' });
 });
 
-// DELETE: Hapus layanan
 app.delete('/api/services/:id', async (c) => {
   const id = c.req.param('id');
   await c.env.DB.prepare('UPDATE services SET is_active = 0 WHERE id = ?')
@@ -80,10 +73,9 @@ app.delete('/api/services/:id', async (c) => {
 });
 
 // ==========================================
-// 3. ENDPOINT PESANAN / BOOKING (ORDERS)
+// 3. ENDPOINT PESANAN (ORDERS)
 // ==========================================
 
-// GET: Ambil daftar seluruh booking
 app.get('/api/orders', async (c) => {
   const query = `
     SELECT 
@@ -92,6 +84,8 @@ app.get('/api/orders', async (c) => {
       orders.total_price,
       orders.scheduled_date,
       orders.status,
+      orders.payment_method,
+      orders.payment_status,
       orders.notes,
       orders.created_at,
       customers.name AS customer_name,
@@ -108,10 +102,9 @@ app.get('/api/orders', async (c) => {
   return c.json(results || []);
 });
 
-// POST: Buat pesanan baru
 app.post('/api/orders', async (c) => {
   const body = await c.req.json();
-  const { customer_name, customer_phone, customer_address, service_id, qty, scheduled_date, notes } = body;
+  const { customer_name, customer_phone, customer_address, service_id, qty, scheduled_date, payment_method, notes } = body;
 
   if (!customer_name || !customer_phone || !customer_address || !service_id || !scheduled_date) {
     return c.json({ error: 'Data formulir pesanan belum lengkap' }, 400);
@@ -132,28 +125,34 @@ app.post('/api/orders', async (c) => {
   const unitPrice = service ? service.base_price : 0;
   const quantity = Number(qty) || 1;
   const totalPrice = unitPrice * quantity;
+  const method = payment_method || 'cash';
 
   const orderResult = await c.env.DB.prepare(
-    `INSERT INTO orders (customer_id, service_id, qty, total_price, scheduled_date, status, notes)
-     VALUES (?, ?, ?, ?, ?, 'pending', ?)`
+    `INSERT INTO orders (customer_id, service_id, qty, total_price, scheduled_date, status, payment_method, payment_status, notes)
+     VALUES (?, ?, ?, ?, ?, 'pending', ?, 'unpaid', ?)`
   )
-    .bind(customerId, service_id, quantity, totalPrice, scheduled_date, notes || '')
+    .bind(customerId, service_id, quantity, totalPrice, scheduled_date, method, notes || '')
     .run();
 
-  return c.json({ success: true, order_id: orderResult.meta.last_row_id }, 201);
+  return c.json({ success: true, order_id: orderResult.meta.last_row_id, total_price: totalPrice, payment_method: method }, 201);
 });
 
-// PATCH: Update status pesanan
+// Update status operasional & pembayaran
 app.patch('/api/orders/:id/status', async (c) => {
   const id = c.req.param('id');
   const body = await c.req.json();
-  const { status } = body;
+  const { status, payment_status } = body;
 
-  await c.env.DB.prepare('UPDATE orders SET status = ? WHERE id = ?')
-    .bind(status, id)
+  await c.env.DB.prepare(
+    `UPDATE orders 
+     SET status = COALESCE(?, status),
+         payment_status = COALESCE(?, payment_status)
+     WHERE id = ?`
+  )
+    .bind(status || null, payment_status || null, id)
     .run();
 
-  return c.json({ success: true, message: 'Status pesanan berhasil diperbarui' });
+  return c.json({ success: true, message: 'Data pesanan berhasil diperbarui' });
 });
 
 export default app;
