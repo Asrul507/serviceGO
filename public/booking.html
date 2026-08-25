@@ -37,7 +37,7 @@
       </div>
       <div id="serviceListContainer" class="space-y-2.5">
         <div class="bg-white p-4 rounded-xl border border-slate-200 text-center text-xs text-slate-400">
-          Memuat daftar layanan...
+          <i class="fa-solid fa-spinner fa-spin mr-1"></i> Memuat daftar layanan...
         </div>
       </div>
     </div>
@@ -65,7 +65,7 @@
       </div>
     </div>
 
-    <!-- 3. Form Data Pemesan -->
+    <!-- 3. Form Lokasi & Kontak -->
     <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
       <h3 class="font-bold text-slate-800 text-sm mb-1">Data Lokasi & Jadwal</h3>
       <p class="text-xs text-slate-500 mb-4">Informasikan alamat dan waktu kedatangan teknisi.</p>
@@ -104,48 +104,49 @@
         <div>
           <label class="block font-semibold text-slate-700 mb-2">Metode Pembayaran *</label>
           <div class="space-y-2">
-            <label class="flex items-start gap-3 p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer transition">
-              <input type="radio" name="payment_option" value="cash" checked class="mt-0.5 text-blue-600 focus:ring-blue-500" />
+            
+            <label class="flex items-start gap-3 p-3 border border-blue-200 bg-blue-50/40 rounded-xl hover:bg-blue-50 cursor-pointer transition">
+              <input type="radio" name="payment_option" value="duitku" checked class="mt-0.5 text-blue-600 focus:ring-blue-500" />
               <div>
-                <div class="font-semibold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i> Bayar di Tempat (Saat Teknisi Tiba)</div>
-                <div class="text-[11px] text-slate-500">Tunai / transfer langsung ke teknisi setelah pekerjaan selesai.</div>
+                <div class="font-semibold text-slate-900 flex items-center gap-1.5">
+                  <i class="fa-solid fa-credit-card text-blue-600"></i> Bayar Otomatis (VA Bank / QRIS / E-Wallet)
+                  <span class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Sandbox</span>
+                </div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Simulasi pembayaran instan dengan Virtual Account & QRIS via Duitku.</div>
               </div>
             </label>
 
-            <label class="flex items-start gap-3 p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer transition">
-              <input type="radio" name="payment_option" value="transfer" class="mt-0.5 text-blue-600 focus:ring-blue-500" />
+            <label class="flex items-start gap-3 p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer transition">
+              <input type="radio" name="payment_option" value="cash" class="mt-0.5 text-blue-600 focus:ring-blue-500" />
               <div>
-                <div class="font-semibold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-building-columns text-blue-600"></i> Transfer Bank (Bayar Sekarang)</div>
-                <div class="text-[11px] text-slate-500">Transfer via rekening BCA / Mandiri sebelum teknisi datang.</div>
+                <div class="font-semibold text-slate-800 flex items-center gap-1.5">
+                  <i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i> Bayar di Tempat (Saat Teknisi Tiba)
+                </div>
+                <div class="text-[11px] text-slate-500 mt-0.5">Pembayaran tunai langsung setelah pengerjaan selesai di lokasi.</div>
               </div>
             </label>
 
-            <label class="flex items-start gap-3 p-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer transition">
-              <input type="radio" name="payment_option" value="qris" class="mt-0.5 text-blue-600 focus:ring-blue-500" />
-              <div>
-                <div class="font-semibold text-slate-800 flex items-center gap-1.5"><i class="fa-solid fa-qrcode text-purple-600"></i> QRIS Instant (Bayar Sekarang)</div>
-                <div class="text-[11px] text-slate-500">Scan barcode via GoPay, OVO, ShopeePay, DANA, m-Banking.</div>
-              </div>
-            </label>
           </div>
         </div>
 
         <button type="submit" id="submitBtn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md transition text-xs flex items-center justify-center gap-2">
-          <i class="fa-solid fa-paper-plane"></i> Pesan Sekarang
+          <i class="fa-solid fa-paper-plane"></i> Lanjutkan Pembayaran
         </button>
       </form>
     </div>
 
-    <!-- Modal Konfirmasi Sukses -->
+    <!-- Modal Konfirmasi Sukses Cash -->
     <div id="paymentSuccessModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
       <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center">
         <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
           <i class="fa-solid fa-check"></i>
         </div>
         <h4 class="font-bold text-slate-800 text-base mb-1">Pesanan Berhasil Diterima!</h4>
-        <div id="paymentInstructions" class="text-xs text-slate-600 my-4 bg-slate-50 p-3 rounded-xl border border-slate-200 text-left"></div>
+        <p class="text-xs text-slate-500 my-3 leading-relaxed">
+          Terima kasih. Pesanan Anda telah tersimpan dan tim kami akan segera menghubungi nomor WhatsApp Anda untuk konfirmasi jadwal.
+        </p>
         <button onclick="window.location.reload()" class="w-full bg-slate-900 hover:bg-black text-white font-medium py-2.5 rounded-lg text-xs transition">
-          Kembali ke Halaman Utama
+          Selesai
         </button>
       </div>
     </div>
@@ -167,7 +168,7 @@
         servicesData = await res.json();
         renderServiceCards();
       } catch (err) {
-        document.getElementById('serviceListContainer').innerHTML = `<div class="text-center text-xs text-red-500 py-3">Gagal memuat katalog layanan.</div>`;
+        document.getElementById('serviceListContainer').innerHTML = `<div class="text-center text-xs text-red-500 py-3"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Gagal memuat katalog layanan.</div>`;
       }
     }
 
@@ -273,7 +274,7 @@
 
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses Pesanan...';
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menghubungkan ke Pembayaran...';
 
       const itemsPayload = cartKeys.map(k => ({
         id: Number(cart[k].id),
@@ -304,49 +305,21 @@
         const data = await res.json();
 
         if (res.ok && data.success) {
-          showPaymentInstruction(data.order_id, data.total_price, paymentMethod);
+          if (paymentMethod === 'duitku' && data.payment_url) {
+            window.location.href = data.payment_url;
+          } else {
+            document.getElementById('paymentSuccessModal').classList.replace('hidden', 'flex');
+          }
         } else {
           alert('Gagal: ' + (data.error || 'Terjadi kesalahan saat memproses pesanan'));
           btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Pesan Sekarang';
+          btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Lanjutkan Pembayaran';
         }
       } catch (err) {
         alert('Terjadi kendala jaringan.');
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Pesan Sekarang';
+        btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Lanjutkan Pembayaran';
       }
-    }
-
-    function showPaymentInstruction(orderId, total, method) {
-      const box = document.getElementById('paymentInstructions');
-      const formattedTotal = `Rp ${Number(total).toLocaleString('id-ID')}`;
-
-      if (method === 'transfer') {
-        box.innerHTML = `
-          <div class="font-bold text-slate-800 mb-1">Instruksi Transfer Bank:</div>
-          <div>Total Tagihan: <span class="font-bold text-emerald-600 text-sm">${formattedTotal}</span></div>
-          <div class="mt-2 text-[11px] text-slate-600">
-            Bank: <b>BCA / Mandiri</b><br/>
-            No. Rekening: <b>123-456-7890</b><br/>
-            Atas Nama: <b>serviceGO Official</b>
-          </div>
-          <p class="mt-2 text-[10px] text-slate-500 italic">Kirim bukti transfer ke WhatsApp admin kami untuk konfirmasi jadwal.</p>
-        `;
-      } else if (method === 'qris') {
-        box.innerHTML = `
-          <div class="font-bold text-slate-800 mb-1">Instruksi Pembayaran QRIS:</div>
-          <div>Total Tagihan: <span class="font-bold text-emerald-600 text-sm">${formattedTotal}</span></div>
-          <p class="mt-2 text-[11px] text-slate-600">Barcode QRIS resmi akan segera dikirimkan oleh tim admin ke WhatsApp Anda.</p>
-        `;
-      } else {
-        box.innerHTML = `
-          <div class="font-bold text-slate-800 mb-1">Pembayaran di Lokasi:</div>
-          <div>Total Perkiraan: <span class="font-bold text-emerald-600 text-sm">${formattedTotal}</span></div>
-          <p class="mt-2 text-[11px] text-slate-600">Anda dapat membayar tunai kepada teknisi setelah seluruh pengerjaan selesai.</p>
-        `;
-      }
-
-      document.getElementById('paymentSuccessModal').classList.replace('hidden', 'flex');
     }
 
     function escapeHtml(text) {
