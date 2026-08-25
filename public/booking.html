@@ -113,7 +113,7 @@
                 <input type="radio" name="payment_option" value="duitku" checked onchange="toggleOnlineChannels(true)" class="mt-0.5 text-blue-600 focus:ring-blue-500" />
                 <div>
                   <div class="font-bold text-slate-900 flex items-center gap-1.5">
-                    <i class="fa-solid fa-bolt text-blue-600"></i> Bayar Otomatis (Pop-up Modal)
+                    <i class="fa-solid fa-bolt text-blue-600"></i> Bayar Otomatis (Duitku Sandbox)
                   </div>
                   <div class="text-[11px] text-slate-500 mt-0.5">Pilih channel pembayaran instan di bawah ini:</div>
                 </div>
@@ -155,7 +155,7 @@
       </form>
     </div>
 
-    <!-- Modal Konfirmasi Sukses -->
+    <!-- Modal Konfirmasi Sukses Cash / Selesai -->
     <div id="paymentSuccessModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4 z-50">
       <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center">
         <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
@@ -333,29 +333,38 @@
         const data = await res.json();
 
         if (res.ok && data.success) {
-          if (paymentMethod === 'duitku' && data.reference) {
-            // Panggil Duitku Pop-Up UI dengan checkout.process
-            checkout.process(data.reference, {
-              successEvent: function(result) {
-                document.getElementById('successModalTitle').textContent = 'Pembayaran Lunas & Terverifikasi!';
-                document.getElementById('successModalDesc').textContent = 'Terima kasih, pembayaran online Anda berhasil. Teknisi kami akan datang sesuai jadwal yang dipilih.';
-                document.getElementById('paymentSuccessModal').classList.replace('hidden', 'flex');
-              },
-              pendingEvent: function(result) {
-                document.getElementById('successModalTitle').textContent = 'Menunggu Pembayaran';
-                document.getElementById('successModalDesc').textContent = 'Nomor Virtual Account / QRIS telah diterbitkan. Silakan selesaikan pembayaran sesuai batas waktu.';
-                document.getElementById('paymentSuccessModal').classList.replace('hidden', 'flex');
-              },
-              errorEvent: function(result) {
-                alert('Pembayaran gagal atau dibatalkan.');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Lanjutkan Pembayaran';
-              },
-              closeEvent: function(result) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Lanjutkan Pembayaran';
-              }
-            });
+          if (paymentMethod === 'duitku') {
+            // Coba buka Pop-up SDK jika reference tersedia dan checkout siap
+            if (data.reference && typeof checkout !== 'undefined' && checkout.process) {
+              checkout.process(data.reference, {
+                successEvent: function(result) {
+                  document.getElementById('successModalTitle').textContent = 'Pembayaran Lunas!';
+                  document.getElementById('successModalDesc').textContent = 'Terima kasih, pembayaran online Anda telah terverifikasi lunas.';
+                  document.getElementById('paymentSuccessModal').classList.replace('hidden', 'flex');
+                },
+                pendingEvent: function(result) {
+                  document.getElementById('successModalTitle').textContent = 'Menunggu Pembayaran';
+                  document.getElementById('successModalDesc').textContent = 'Kode pembayaran telah dibuat. Silakan selesaikan pembayaran.';
+                  document.getElementById('paymentSuccessModal').classList.replace('hidden', 'flex');
+                },
+                errorEvent: function(result) {
+                  alert('Pembayaran gagal atau dibatalkan.');
+                  btn.disabled = false;
+                  btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Lanjutkan Pembayaran';
+                },
+                closeEvent: function(result) {
+                  btn.disabled = false;
+                  btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Lanjutkan Pembayaran';
+                }
+              });
+            } else if (data.payment_url) {
+              // Fallback langsung buka link pembayaran jika pop-up tidak terpanggil
+              window.location.href = data.payment_url;
+            } else {
+              alert('Gagal mendapatkan sesi pembayaran Duitku.');
+              btn.disabled = false;
+              btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Lanjutkan Pembayaran';
+            }
           } else {
             // Pembayaran cash di lokasi
             document.getElementById('paymentSuccessModal').classList.replace('hidden', 'flex');
